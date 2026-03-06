@@ -3,6 +3,7 @@ const { execSync, exec, spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const crypto = require('crypto');
 
 // ─── Window ───────────────────────────────────────────────────────────────────
 
@@ -12,6 +13,7 @@ let trayInterval = null;
 let isSuspended = false;
 const DEFAULT_SETTINGS = { refreshProfile: 'balanced' };
 let settings = { ...DEFAULT_SETTINGS };
+let protectionCache = { ts: 0, report: null };
 
 function getSettingsPath() {
   return path.join(app.getPath('userData'), 'settings.json');
@@ -35,7 +37,7 @@ function saveSettings() {
 }
 
 function normalizeRefreshProfile(value) {
-  if (value === 'real-time' || value === 'balanced' || value === 'power-saver') return value;
+  if (value === 'live' || value === 'real-time' || value === 'balanced' || value === 'power-saver') return value;
   return DEFAULT_SETTINGS.refreshProfile;
 }
 
@@ -144,6 +146,751 @@ function dirSize(dirPath) {
   } catch { return 0; }
 }
 
+function isHomePath(targetPath) {
+  const home = os.homedir();
+  const resolved = path.resolve(targetPath);
+  return resolved === home || resolved.startsWith(`${home}${path.sep}`);
+}
+
+function resolveSpaceLensPath(targetPath) {
+  const home = os.homedir();
+  const resolved = path.resolve(String(targetPath || home));
+  if (!isHomePath(resolved)) return home;
+  if (!fs.existsSync(resolved)) return home;
+  try {
+    const st = fs.statSync(resolved);
+    return st.isDirectory() ? resolved : path.dirname(resolved);
+  } catch {
+    return home;
+  }
+}
+
+function buildHomeBreadcrumbs(targetPath) {
+  const home = os.homedir();
+  const resolved = path.resolve(targetPath);
+  const relative = path.relative(home, resolved);
+  if (!relative || relative === '') {
+    return [{ name: '~', path: home }];
+  }
+  const parts = relative.split(path.sep).filter(Boolean);
+  const crumbs = [{ name: '~', path: home }];
+  let cursor = home;
+  for (const part of parts) {
+    cursor = path.join(cursor, part);
+    crumbs.push({ name: part, path: cursor });
+  }
+  return crumbs;
+}
+
+async function scanSpaceLensDirectory(options = {}) {
+  const targetPath = resolveSpaceLensPath(options.targetPath);
+  const maxEntries = Math.max(10, Math.min(120, Number(options.maxEntries) || 60));
+  const children = [];
+  const entries = await fs.promises.readdir(targetPath, { withFileTypes: true }).catch(() => []);
+
+  for (const entry of entries) {
+    if (children.length >= maxEntries) break;
+    const name = entry.name;
+    if (!name || name.startsWith('.')) continue;
+    const fullPath = path.join(targetPath, name);
+    if (!isHomePath(fullPath)) continue;
+
+    try {
+      let size = 0;
+      if (entry.isDirectory()) {
+        size = dirSize(fullPath);
+      } else if (entry.isFile()) {
+        size = fs.statSync(fullPath).size;
+      } else {
+        continue;
+      }
+      children.push({
+        name,
+        path: fullPath,
+        type: entry.isDirectory() ? 'directory' : 'file',
+        size,
+        sizeStr: bytesToHuman(size),
+      });
+    } catch {}
+  }
+
+  children.sort((a, b) => b.size - a.size);
+  const topItems = children.slice(0, 30);
+  const listedBytes = topItems.reduce((acc, item) => acc + item.size, 0);
+  const totalBytes = dirSize(targetPath);
+  const denominator = totalBytes > 0 ? totalBytes : listedBytes;
+
+  const items = topItems.map(item => ({
+    ...item,
+    pct: denominator > 0 ? Math.max(0, Math.min(100, Math.round((item.size / denominator) * 1000) / 10)) : 0,
+  }));
+
+  return {
+    success: true,
+    targetPath,
+    parentPath: targetPath === os.homedir() ? null : path.dirname(targetPath),
+    breadcrumbs: buildHomeBreadcrumbs(targetPath),
+    totalBytes,
+    totalStr: bytesToHuman(totalBytes),
+    listedBytes,
+    listedStr: bytesToHuman(listedBytes),
+    itemCount: items.length,
+    items,
+  };
+}
+
+function listCloudStorageRoots() {
+  const cloudStorageDir = path.join(os.homedir(), 'Library', 'CloudStorage');
+  if (!fs.existsSync(cloudStorageDir)) return [];
+  try {
+    return fs.readdirSync(cloudStorageDir)
+      .map(name => path.join(cloudStorageDir, name))
+      .filter(full => {
+        try { return fs.statSync(full).isDirectory(); } catch { return false; }
+      });
+  } catch {
+    return [];
+  }
+}
+
+function buildCloudProviders() {
+  const home = os.homedir();
+  const cloudRoots = listCloudStorageRoots();
+  const googleRoots = cloudRoots.filter(p => path.basename(p).toLowerCase().startsWith('googledrive'));
+  const oneDriveRoots = cloudRoots.filter(p => path.basename(p).toLowerCase().startsWith('onedrive'));
+
+  const providers = [
+    {
+      id: 'icloud',
+      name: 'iCloud Drive',
+      icon: '☁️',
+      syncRoots: [path.join(home, 'Library', 'Mobile Documents', 'com~apple~CloudDocs')].filter(p => fs.existsSync(p)),
+      cacheRoots: [
+        path.join(home, 'Library', 'Caches', 'CloudKit'),
+        path.join(home, 'Library', 'Caches', 'com.apple.bird'),
+      ].filter(p => fs.existsSync(p)),
+    },
+    {
+      id: 'google-drive',
+      name: 'Google Drive',
+      icon: '🟢',
+      syncRoots: googleRoots,
+      cacheRoots: [
+        path.join(home, 'Library', 'Caches', 'com.google.drivefs'),
+        path.join(home, 'Library', 'Application Support', 'Google', 'DriveFS'),
+      ].filter(p => fs.existsSync(p)),
+    },
+    {
+      id: 'onedrive',
+      name: 'OneDrive',
+      icon: '🔵',
+      syncRoots: oneDriveRoots,
+      cacheRoots: [
+        path.join(home, 'Library', 'Caches', 'com.microsoft.OneDrive'),
+        path.join(home, 'Library', 'Application Support', 'OneDrive'),
+      ].filter(p => fs.existsSync(p)),
+    },
+  ];
+
+  return providers.map(provider => ({
+    ...provider,
+    present: provider.syncRoots.length > 0 || provider.cacheRoots.length > 0,
+  }));
+}
+
+async function collectStaleCacheCandidates(cacheRoots, staleDays, maxFiles) {
+  const minMtimeMs = Date.now() - (staleDays * 24 * 60 * 60 * 1000);
+  const candidates = [];
+
+  async function walk(dirPath, depth) {
+    if (candidates.length >= maxFiles || depth > 6) return;
+    let entries = [];
+    try {
+      entries = await fs.promises.readdir(dirPath, { withFileTypes: true });
+    } catch {
+      return;
+    }
+
+    for (const entry of entries) {
+      if (candidates.length >= maxFiles) break;
+      const name = entry.name;
+      if (!name || name === '.DS_Store') continue;
+      const fullPath = path.join(dirPath, name);
+      if (!isHomePath(fullPath)) continue;
+
+      if (entry.isDirectory()) {
+        await walk(fullPath, depth + 1);
+        continue;
+      }
+      if (!entry.isFile()) continue;
+
+      try {
+        const st = await fs.promises.stat(fullPath);
+        if (!st.isFile()) continue;
+        if (st.mtimeMs > minMtimeMs) continue;
+        if (st.size < 128 * 1024) continue;
+        candidates.push({
+          path: fullPath,
+          name,
+          size: st.size,
+          sizeStr: bytesToHuman(st.size),
+          mtimeMs: st.mtimeMs,
+          modifiedAt: new Date(st.mtimeMs).toISOString(),
+        });
+      } catch {}
+    }
+  }
+
+  for (const root of cacheRoots) {
+    if (candidates.length >= maxFiles) break;
+    await walk(root, 0);
+  }
+
+  candidates.sort((a, b) => b.size - a.size);
+  return candidates;
+}
+
+async function getCloudCleanupReport(options = {}) {
+  const staleDays = Math.max(7, Math.min(120, Number(options.staleDays) || 21));
+  const maxFiles = Math.max(100, Math.min(4000, Number(options.maxFiles) || 1200));
+  const providers = buildCloudProviders();
+  const reportProviders = [];
+
+  for (const provider of providers) {
+    const syncBytes = provider.syncRoots.reduce((acc, p) => acc + dirSize(p), 0);
+    const cacheBytes = provider.cacheRoots.reduce((acc, p) => acc + dirSize(p), 0);
+    const staleCandidates = provider.cacheRoots.length
+      ? await collectStaleCacheCandidates(provider.cacheRoots, staleDays, maxFiles)
+      : [];
+    const staleBytes = staleCandidates.reduce((acc, c) => acc + c.size, 0);
+
+    reportProviders.push({
+      id: provider.id,
+      name: provider.name,
+      icon: provider.icon,
+      present: provider.present,
+      syncRoots: provider.syncRoots,
+      cacheRoots: provider.cacheRoots,
+      syncBytes,
+      syncStr: bytesToHuman(syncBytes),
+      cacheBytes,
+      cacheStr: bytesToHuman(cacheBytes),
+      staleDays,
+      staleCount: staleCandidates.length,
+      staleBytes,
+      staleStr: bytesToHuman(staleBytes),
+      staleCandidates: staleCandidates.slice(0, 80),
+    });
+  }
+
+  const summary = {
+    providersDetected: reportProviders.filter(p => p.present).length,
+    syncBytes: reportProviders.reduce((acc, p) => acc + p.syncBytes, 0),
+    cacheBytes: reportProviders.reduce((acc, p) => acc + p.cacheBytes, 0),
+    staleBytes: reportProviders.reduce((acc, p) => acc + p.staleBytes, 0),
+    staleCount: reportProviders.reduce((acc, p) => acc + p.staleCount, 0),
+    scannedAt: new Date().toISOString(),
+  };
+
+  return {
+    success: true,
+    staleDays,
+    summary: {
+      ...summary,
+      syncStr: bytesToHuman(summary.syncBytes),
+      cacheStr: bytesToHuman(summary.cacheBytes),
+      staleStr: bytesToHuman(summary.staleBytes),
+    },
+    providers: reportProviders,
+  };
+}
+
+async function cleanCloudProviderCache({ providerId, staleDays = 21, maxFiles = 1500 }) {
+  const report = await getCloudCleanupReport({ staleDays, maxFiles });
+  if (!report.success) return report;
+  const provider = (report.providers || []).find(p => p.id === providerId);
+  if (!provider) return { success: false, error: 'Cloud provider not found' };
+
+  const trashed = [];
+  const failed = [];
+  for (const item of provider.staleCandidates) {
+    const targetPath = path.resolve(item.path);
+    if (!isHomePath(targetPath)) {
+      failed.push({ path: targetPath, error: 'Path outside home scope' });
+      continue;
+    }
+    if (!fs.existsSync(targetPath)) continue;
+    try {
+      await shell.trashItem(targetPath);
+      trashed.push(targetPath);
+    } catch (e) {
+      failed.push({ path: targetPath, error: e.message || 'Failed to move to Trash' });
+    }
+  }
+
+  return {
+    success: failed.length === 0,
+    providerId,
+    trashedCount: trashed.length,
+    trashedBytes: provider.staleCandidates
+      .filter(c => trashed.includes(c.path))
+      .reduce((acc, c) => acc + (c.size || 0), 0),
+    trashed,
+    failed,
+  };
+}
+
+async function collectFilesForDuplicateScan(roots, { minSizeBytes, maxFiles, maxDepth = 8 }) {
+  const files = [];
+  const skipDirNames = new Set(['.git', '.svn', '.Trash', 'node_modules']);
+
+  async function walk(dirPath, depth) {
+    if (files.length >= maxFiles || depth > maxDepth) return;
+    let entries = [];
+    try {
+      entries = await fs.promises.readdir(dirPath, { withFileTypes: true });
+    } catch {
+      return;
+    }
+
+    for (const entry of entries) {
+      if (files.length >= maxFiles) break;
+      const name = entry.name;
+      if (!name || name.startsWith('.')) continue;
+      const fullPath = path.join(dirPath, name);
+
+      if (entry.isDirectory()) {
+        if (skipDirNames.has(name)) continue;
+        await walk(fullPath, depth + 1);
+        continue;
+      }
+
+      if (!entry.isFile()) continue;
+      try {
+        const st = await fs.promises.stat(fullPath);
+        if (st.size >= minSizeBytes) {
+          files.push({
+            path: fullPath,
+            size: st.size,
+            mtimeMs: st.mtimeMs,
+          });
+        }
+      } catch {}
+    }
+  }
+
+  for (const root of roots) {
+    if (files.length >= maxFiles) break;
+    await walk(root, 0);
+  }
+
+  return files;
+}
+
+async function quickFileSignature(filePath, size) {
+  const sampleSize = 64 * 1024;
+  const fd = await fs.promises.open(filePath, 'r');
+  try {
+    const startLen = Math.min(sampleSize, size);
+    const startBuf = Buffer.alloc(startLen);
+    const startRead = await fd.read(startBuf, 0, startLen, 0);
+
+    let endBuf = Buffer.alloc(0);
+    if (size > sampleSize) {
+      const endLen = Math.min(sampleSize, Math.max(0, size - startRead.bytesRead));
+      if (endLen > 0) {
+        endBuf = Buffer.alloc(endLen);
+        const endPos = Math.max(0, size - endLen);
+        const endRead = await fd.read(endBuf, 0, endLen, endPos);
+        endBuf = endBuf.subarray(0, endRead.bytesRead);
+      }
+    }
+
+    const hash = crypto.createHash('sha256');
+    hash.update(Buffer.from(String(size)));
+    hash.update(startBuf.subarray(0, startRead.bytesRead));
+    hash.update(endBuf);
+    return hash.digest('hex');
+  } finally {
+    await fd.close();
+  }
+}
+
+function fullFileHash(filePath) {
+  return new Promise((resolve, reject) => {
+    const hash = crypto.createHash('sha256');
+    const stream = fs.createReadStream(filePath);
+    stream.on('data', chunk => hash.update(chunk));
+    stream.on('error', reject);
+    stream.on('end', () => resolve(hash.digest('hex')));
+  });
+}
+
+async function scanDuplicateFiles(options = {}) {
+  const home = os.homedir();
+  const defaultRoots = ['Downloads', 'Desktop', 'Documents', 'Pictures', 'Movies']
+    .map(name => path.join(home, name))
+    .filter(p => fs.existsSync(p));
+
+  const rootsInput = Array.isArray(options.roots) && options.roots.length ? options.roots : defaultRoots;
+  const roots = rootsInput
+    .map(p => path.resolve(String(p)))
+    .filter(p => isHomePath(p) && fs.existsSync(p));
+
+  const minSizeBytes = Math.max(256 * 1024, Number(options.minSizeBytes) || 1024 * 1024);
+  const maxFiles = Math.max(200, Math.min(10000, Number(options.maxFiles) || 2500));
+  const maxGroups = Math.max(10, Math.min(500, Number(options.maxGroups) || 150));
+  const startedAt = Date.now();
+
+  const files = await collectFilesForDuplicateScan(roots, { minSizeBytes, maxFiles });
+  const scannedBytes = files.reduce((acc, f) => acc + f.size, 0);
+
+  const sizeGroups = new Map();
+  for (const file of files) {
+    const key = String(file.size);
+    if (!sizeGroups.has(key)) sizeGroups.set(key, []);
+    sizeGroups.get(key).push(file);
+  }
+
+  const quickCandidates = [];
+  for (const group of sizeGroups.values()) {
+    if (group.length > 1) quickCandidates.push(...group);
+  }
+
+  const quickGroups = new Map();
+  for (const file of quickCandidates) {
+    try {
+      const signature = await quickFileSignature(file.path, file.size);
+      const key = `${file.size}:${signature}`;
+      if (!quickGroups.has(key)) quickGroups.set(key, []);
+      quickGroups.get(key).push(file);
+    } catch {}
+  }
+
+  const duplicates = [];
+  for (const maybeGroup of quickGroups.values()) {
+    if (maybeGroup.length < 2) continue;
+    const contentGroups = new Map();
+
+    for (const file of maybeGroup) {
+      try {
+        const hash = await fullFileHash(file.path);
+        if (!contentGroups.has(hash)) contentGroups.set(hash, []);
+        contentGroups.get(hash).push(file);
+      } catch {}
+    }
+
+    for (const [hash, group] of contentGroups.entries()) {
+      if (group.length < 2) continue;
+      const sorted = group.slice().sort((a, b) => a.mtimeMs - b.mtimeMs);
+      const keepIndex = sorted.length - 1; // Keep newest by default.
+      const perFileSize = sorted[0].size;
+      const reclaimableBytes = perFileSize * (sorted.length - 1);
+
+      const filesOut = sorted.map((f, idx) => ({
+        path: f.path,
+        name: path.basename(f.path),
+        dir: path.dirname(f.path),
+        size: f.size,
+        sizeStr: bytesToHuman(f.size),
+        mtimeMs: f.mtimeMs,
+        modifiedAt: new Date(f.mtimeMs).toISOString(),
+        selected: idx !== keepIndex,
+      }));
+
+      duplicates.push({
+        id: `${hash.slice(0, 12)}:${perFileSize}`,
+        hash,
+        count: sorted.length,
+        size: perFileSize,
+        sizeStr: bytesToHuman(perFileSize),
+        reclaimableBytes,
+        reclaimableStr: bytesToHuman(reclaimableBytes),
+        keepPath: filesOut[keepIndex].path,
+        files: filesOut,
+      });
+    }
+  }
+
+  duplicates.sort((a, b) => b.reclaimableBytes - a.reclaimableBytes);
+  const groups = duplicates.slice(0, maxGroups);
+  const reclaimableBytes = groups.reduce((acc, g) => acc + g.reclaimableBytes, 0);
+
+  return {
+    success: true,
+    roots,
+    minSizeBytes,
+    maxFiles,
+    scannedFiles: files.length,
+    scannedBytes,
+    duplicateCandidates: quickCandidates.length,
+    groupCount: groups.length,
+    reclaimableBytes,
+    reclaimableStr: bytesToHuman(reclaimableBytes),
+    groups,
+    durationMs: Date.now() - startedAt,
+  };
+}
+
+function getProtectionBaselinePath() {
+  return path.join(app.getPath('userData'), 'protection-baseline.json');
+}
+
+function loadProtectionBaseline() {
+  try {
+    const p = getProtectionBaselinePath();
+    if (!fs.existsSync(p)) return { keys: [], updatedAt: null };
+    const parsed = JSON.parse(fs.readFileSync(p, 'utf8'));
+    return {
+      keys: Array.isArray(parsed.keys) ? parsed.keys : [],
+      updatedAt: parsed.updatedAt || null,
+    };
+  } catch {
+    return { keys: [], updatedAt: null };
+  }
+}
+
+function saveProtectionBaseline(keys) {
+  try {
+    fs.writeFileSync(getProtectionBaselinePath(), JSON.stringify({
+      keys: Array.from(new Set(keys || [])),
+      updatedAt: new Date().toISOString(),
+    }, null, 2));
+  } catch {}
+}
+
+function isTrustedVendorName(value) {
+  const n = String(value || '').toLowerCase();
+  const trusted = [
+    'apple', 'microsoft', 'google', 'adobe', 'dropbox', 'spotify', 'zoom',
+    'brave', 'mozilla', 'firefox', 'chrome', 'slack', 'notion', 'onedrive',
+    'teamviewer', 'jetbrains', 'github', 'docker', 'setapp', 'bitdefender',
+  ];
+  return trusted.some(v => n.includes(v));
+}
+
+function getStartupItemsInternal() {
+  const home = os.homedir();
+  const agentDirs = [
+    { dir: `${home}/Library/LaunchAgents`, system: false },
+    { dir: '/Library/LaunchAgents', system: true },
+    { dir: '/Library/LaunchDaemons', system: true },
+  ];
+
+  const items = [];
+
+  for (const { dir, system } of agentDirs) {
+    if (!fs.existsSync(dir)) continue;
+    const files = fs.readdirSync(dir).filter(f => f.endsWith('.plist'));
+
+    for (const file of files) {
+      const filePath = path.join(dir, file);
+      const name = file.replace('.plist', '');
+      const loadedOut = run(`launchctl list 2>/dev/null | grep "${name}"`).trim();
+      const enabled = loadedOut !== '';
+      let impact = 'Low';
+      const heavy = ['spotify', 'dropbox', 'googledrive', 'onedrive', 'creative cloud', 'adobe', 'microsoft'];
+      if (heavy.some(h => name.toLowerCase().includes(h))) impact = 'High';
+      else if (name.toLowerCase().includes('helper') || name.toLowerCase().includes('agent')) impact = 'Medium';
+      items.push({ id: file, name, filePath, enabled, impact, system });
+    }
+  }
+
+  try {
+    const loginItems = run(`osascript -e 'tell application "System Events" to get the name of every login item' 2>/dev/null`).trim();
+    if (loginItems) {
+      loginItems.split(', ').filter(Boolean).forEach(name => {
+        if (!items.find(i => i.name.includes(name))) {
+          items.push({ id: `login-${name}`, name, enabled: true, impact: 'Medium', system: false, loginItem: true });
+        }
+      });
+    }
+  } catch {}
+
+  return items;
+}
+
+function toggleStartupItemInternal({ filePath, enabled, loginItem, name }) {
+  return new Promise((resolve) => {
+    if (loginItem) {
+      const script = enabled
+        ? `tell application "System Events" to delete login item "${name}"`
+        : `tell application "System Events" to make login item at end with properties {name:"${name}", hidden:false}`;
+      exec(`osascript -e '${script}'`, (err) => resolve({ success: !err, error: err?.message }));
+      return;
+    }
+
+    const action = enabled ? 'unload' : 'load';
+    const cmd = `launchctl ${action} "${filePath}" 2>/dev/null`;
+    exec(cmd, (err) => {
+      if (!err) { resolve({ success: true }); return; }
+      exec(
+        `osascript -e 'do shell script "launchctl ${action} \\"${filePath}\\"" with administrator privileges'`,
+        (err2) => resolve({ success: !err2, error: err2?.message })
+      );
+    });
+  });
+}
+
+function listInstalledAppPaths(limit = 80) {
+  const dirs = ['/Applications', `${os.homedir()}/Applications`];
+  const seen = new Set();
+  const apps = [];
+  for (const dir of dirs) {
+    if (!fs.existsSync(dir)) continue;
+    const entries = fs.readdirSync(dir).filter(name => name.endsWith('.app'));
+    for (const entry of entries) {
+      const appPath = path.join(dir, entry);
+      if (seen.has(appPath)) continue;
+      seen.add(appPath);
+      apps.push(appPath);
+      if (apps.length >= limit) return apps;
+    }
+  }
+  return apps;
+}
+
+function isAppSigned(appPath) {
+  try {
+    execSync(`codesign --verify --deep --strict "${appPath}"`, { stdio: 'ignore', timeout: 20000 });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function toProtectionSeverityScore(severity) {
+  if (severity === 'critical') return 18;
+  if (severity === 'warning') return 9;
+  return 3;
+}
+
+function makeProtectionReport(findings, previousBaseline) {
+  const prevSet = new Set(previousBaseline.keys || []);
+  const keys = findings.map(f => f.id);
+  const annotated = findings.map(f => ({ ...f, isNew: !prevSet.has(f.id) }));
+  const counts = {
+    critical: annotated.filter(f => f.severity === 'critical').length,
+    warning: annotated.filter(f => f.severity === 'warning').length,
+    info: annotated.filter(f => f.severity === 'info').length,
+    new: annotated.filter(f => f.isNew).length,
+  };
+  const scoreDrop = annotated.reduce((acc, f) => acc + toProtectionSeverityScore(f.severity), 0);
+  const score = Math.max(0, 100 - scoreDrop);
+  const status = score >= 85 ? 'Excellent' : score >= 70 ? 'Good' : score >= 55 ? 'Caution' : 'Risky';
+
+  const report = {
+    success: true,
+    scannedAt: new Date().toISOString(),
+    baselinePreviousAt: previousBaseline.updatedAt || null,
+    score,
+    status,
+    counts,
+    findings: annotated.sort((a, b) => {
+      const rank = { critical: 0, warning: 1, info: 2 };
+      if (rank[a.severity] !== rank[b.severity]) return rank[a.severity] - rank[b.severity];
+      return (a.title || '').localeCompare(b.title || '');
+    }),
+  };
+
+  saveProtectionBaseline(keys);
+  protectionCache = { ts: Date.now(), report };
+  return report;
+}
+
+async function scanProtection(options = {}) {
+  const force = !!options.force;
+  if (!force && protectionCache.report && (Date.now() - protectionCache.ts) < 120000) {
+    return { ...protectionCache.report, cached: true };
+  }
+
+  const home = os.homedir();
+  const findings = [];
+
+  // 1) Startup/login items risk scan.
+  const startupItems = getStartupItemsInternal();
+  startupItems.forEach(item => {
+    if (!item.enabled || item.system) return;
+    const suspicious = !isTrustedVendorName(item.name) || item.impact === 'High';
+    if (!suspicious) return;
+    const severity = item.impact === 'High' && !isTrustedVendorName(item.name) ? 'critical' : 'warning';
+    findings.push({
+      id: `startup:${item.loginItem ? `login:${item.name}` : item.filePath || item.id}`,
+      type: 'startup-item',
+      severity,
+      title: item.name,
+      description: `${item.loginItem ? 'Login Item' : 'Launch item'} is enabled at startup${item.impact ? ` (${item.impact} impact)` : ''}.`,
+      path: item.filePath || null,
+      actions: ['disable-startup', 'reveal-path'],
+      data: {
+        id: item.id,
+        filePath: item.filePath || null,
+        enabled: item.enabled,
+        loginItem: !!item.loginItem,
+        name: item.name,
+      },
+    });
+  });
+
+  // 2) Unusual LaunchAgents in user Library.
+  const userLaunchAgentsDir = path.join(home, 'Library', 'LaunchAgents');
+  if (fs.existsSync(userLaunchAgentsDir)) {
+    const loadedListOut = run('launchctl list 2>/dev/null');
+    const loadedLabels = new Set(
+      loadedListOut.split('\n')
+        .map(line => line.trim().split(/\s+/).pop())
+        .filter(v => v && v !== 'Label')
+    );
+    const plists = fs.readdirSync(userLaunchAgentsDir).filter(name => name.endsWith('.plist'));
+    plists.forEach(file => {
+      const filePath = path.join(userLaunchAgentsDir, file);
+      const label = run(`defaults read "${filePath}" Label 2>/dev/null`).trim() || file.replace(/\.plist$/, '');
+      const loaded = loadedLabels.has(label) || loadedLabels.has(file.replace(/\.plist$/, ''));
+      const unusual = !isTrustedVendorName(file) && !file.startsWith('com.apple.');
+      if (!unusual) return;
+      findings.push({
+        id: `launch-agent:${filePath}`,
+        type: 'launch-agent',
+        severity: loaded ? 'critical' : 'warning',
+        title: file,
+        description: `User LaunchAgent ${loaded ? 'is loaded and ' : ''}does not match trusted vendor patterns.`,
+        path: filePath,
+        actions: ['disable-launch-agent', 'reveal-path', 'trash-path'],
+        data: { filePath, loaded, label },
+      });
+    });
+  }
+
+  // 3) Unsiged apps check (user-space app bundles).
+  const appPaths = listInstalledAppPaths(60);
+  appPaths.forEach(appPath => {
+    const appName = path.basename(appPath, '.app');
+    const trusted = isTrustedVendorName(appName);
+    if (trusted) return;
+    if (isAppSigned(appPath)) return;
+    const inHome = isHomePath(appPath);
+    findings.push({
+      id: `unsigned-app:${appPath}`,
+      type: 'unsigned-app',
+      severity: inHome ? 'critical' : 'warning',
+      title: appName,
+      description: `App bundle failed code signature verification (${inHome ? 'user space' : '/Applications'}).`,
+      path: appPath,
+      actions: ['reveal-path', 'trash-path'],
+      data: { appPath },
+    });
+  });
+
+  const baseline = loadProtectionBaseline();
+  return makeProtectionReport(findings, baseline);
+}
+
+function canTrashProtectionPath(targetPath) {
+  const resolved = path.resolve(String(targetPath || ''));
+  if (isHomePath(resolved)) return true;
+  return resolved.startsWith('/Applications/') && resolved.endsWith('.app');
+}
+
 function rmDir(dirPath) {
   try {
     execSync(`rm -rf "${dirPath}"`, { timeout: 30000 });
@@ -203,7 +950,7 @@ function isProtectedProcessName(name) {
     'kernel_task', 'launchd', 'windowserver', 'loginwindow', 'syslogd',
     'distnoted', 'cfprefsd', 'notifyd', 'coreservicesd', 'opendirectoryd',
     'hidd', 'airportd', 'bluetoothd', 'finder', 'dock', 'controlcenter',
-    'systemsettings', 'activity monitor', 'maccleaner', 'electron',
+    'systemsettings', 'activity monitor', 'maccleaner', 'lumasweep', 'electron',
   ];
   return protectedNames.some(p => n === p || n.includes(p));
 }
@@ -242,7 +989,7 @@ function isSudoAuthorized() {
 }
 
 function getAskpassScriptPath() {
-  return path.join(app.getPath('userData'), 'askpass-maccleaner.sh');
+  return path.join(app.getPath('userData'), 'askpass-lumasweep.sh');
 }
 
 function ensureAskpassScript() {
@@ -250,7 +997,7 @@ function ensureAskpassScript() {
   if (fs.existsSync(askpassPath)) return askpassPath;
   const script = `#!/bin/sh
 exec /usr/bin/osascript \
-  -e 'text returned of (display dialog "MacCleaner needs administrator access to clean RAM." default answer "" with hidden answer buttons {"Cancel","OK"} default button "OK" with title "MacCleaner")'
+  -e 'text returned of (display dialog "LumaSweep needs administrator access to clean RAM." default answer "" with hidden answer buttons {"Cancel","OK"} default button "OK" with title "LumaSweep")'
 `;
   fs.writeFileSync(askpassPath, script, { mode: 0o700 });
   try { fs.chmodSync(askpassPath, 0o700); } catch {}
@@ -354,7 +1101,7 @@ function buildTrayMenu() {
     },
     { label: 'Refresh', click: () => updateTray() },
     {
-      label: 'Show MacCleaner',
+      label: 'Show LumaSweep',
       click: () => {
         showMainWindow();
       },
@@ -368,6 +1115,12 @@ function buildTrayMenu() {
           type: 'radio',
           checked: getRefreshProfile() === 'real-time',
           click: () => setRefreshProfile('real-time'),
+        },
+        {
+          label: 'Live (No Delay)',
+          type: 'radio',
+          checked: getRefreshProfile() === 'live',
+          click: () => setRefreshProfile('live'),
         },
         {
           label: 'Balanced',
@@ -384,7 +1137,7 @@ function buildTrayMenu() {
       ],
     },
     { type: 'separator' },
-    { label: 'Quit MacCleaner', click: () => app.quit() },
+    { label: 'Quit LumaSweep', click: () => app.quit() },
   ]);
 }
 
@@ -393,7 +1146,7 @@ function updateTray() {
   try {
     const ram = getRamSnapshot();
     tray.setTitle(` ${ram.usedPct}%`);
-    tray.setToolTip(`MacCleaner · RAM ${ram.usedPct}%`);
+    tray.setToolTip(`LumaSweep · RAM ${ram.usedPct}%`);
     tray.setContextMenu(buildTrayMenu());
   } catch {}
 }
@@ -401,8 +1154,10 @@ function updateTray() {
 function getTrayRefreshMs() {
   if (isSuspended) return 60000;
   const profile = getRefreshProfile();
-  const schedule = profile === 'real-time'
-    ? { focused: 5000, visible: 8000, hidden: 15000 }
+  const schedule = profile === 'live'
+    ? { focused: 1000, visible: 2000, hidden: 6000 }
+    : profile === 'real-time'
+      ? { focused: 5000, visible: 8000, hidden: 15000 }
     : profile === 'power-saver'
       ? { focused: 15000, visible: 25000, hidden: 45000 }
       : { focused: 10000, visible: 15000, hidden: 30000 };
@@ -791,11 +1546,233 @@ ipcMain.handle('clean-disk-item', async (event, id) => {
   });
 });
 
+// ─── IPC: Duplicate Scanner ────────────────────────────────────────────────────
+
+ipcMain.handle('scan-duplicates', async (event, options = {}) => {
+  try {
+    return await scanDuplicateFiles(options || {});
+  } catch (e) {
+    return { success: false, error: e.message || 'Duplicate scan failed' };
+  }
+});
+
+ipcMain.handle('trash-paths', async (event, paths = []) => {
+  const targets = Array.isArray(paths) ? paths : [];
+  const trashed = [];
+  const failed = [];
+  let trashedBytes = 0;
+
+  for (const rawPath of targets) {
+    const targetPath = path.resolve(String(rawPath || ''));
+    if (!isHomePath(targetPath)) {
+      failed.push({ path: targetPath, error: 'Path outside home directory is blocked' });
+      continue;
+    }
+    if (!fs.existsSync(targetPath)) {
+      failed.push({ path: targetPath, error: 'File not found' });
+      continue;
+    }
+
+    try {
+      const st = fs.statSync(targetPath);
+      if (!st.isFile() && !st.isDirectory()) {
+        failed.push({ path: targetPath, error: 'Only files and folders can be moved to Trash' });
+        continue;
+      }
+      const targetBytes = pathSize(targetPath);
+      await shell.trashItem(targetPath);
+      trashed.push(targetPath);
+      trashedBytes += targetBytes;
+    } catch (e) {
+      failed.push({ path: targetPath, error: e.message || 'Trash operation failed' });
+    }
+  }
+
+  return {
+    success: failed.length === 0,
+    trashed,
+    trashedBytes,
+    failed,
+  };
+});
+
+ipcMain.handle('get-space-lens', async (event, options = {}) => {
+  try {
+    return await scanSpaceLensDirectory(options || {});
+  } catch (e) {
+    return { success: false, error: e.message || 'Space Lens scan failed' };
+  }
+});
+
+ipcMain.handle('get-cloud-cleanup-report', async (event, options = {}) => {
+  try {
+    return await getCloudCleanupReport(options || {});
+  } catch (e) {
+    return { success: false, error: e.message || 'Cloud cleanup scan failed' };
+  }
+});
+
+ipcMain.handle('clean-cloud-provider-cache', async (event, payload = {}) => {
+  const providerId = String(payload.providerId || '');
+  if (!providerId) return { success: false, error: 'Provider id is required' };
+  try {
+    return await cleanCloudProviderCache({
+      providerId,
+      staleDays: payload.staleDays,
+      maxFiles: payload.maxFiles,
+    });
+  } catch (e) {
+    return { success: false, error: e.message || 'Cloud cleanup action failed' };
+  }
+});
+
+function readPlistValue(plistPath, key) {
+  if (!plistPath || !key || !fs.existsSync(plistPath)) return '';
+  return run(`defaults read "${plistPath}" ${key} 2>/dev/null`).trim();
+}
+
+function pathSize(targetPath) {
+  try {
+    const st = fs.statSync(targetPath);
+    if (st.isDirectory()) return dirSize(targetPath);
+    if (st.isFile()) return st.size;
+  } catch {}
+  return 0;
+}
+
+function toAppSlug(name) {
+  return String(name || '')
+    .toLowerCase()
+    .replace(/\.app$/i, '')
+    .replace(/[^a-z0-9]+/g, '')
+    .trim();
+}
+
+function addHomePathIfExists(bucket, targetPath) {
+  const resolved = path.resolve(String(targetPath || ''));
+  if (!resolved || !isHomePath(resolved) || !fs.existsSync(resolved)) return;
+  bucket.add(resolved);
+}
+
+function addMatchingEntries(bucket, dirPath, predicate) {
+  if (!fs.existsSync(dirPath)) return;
+  let entries = [];
+  try {
+    entries = fs.readdirSync(dirPath);
+  } catch {
+    return;
+  }
+  for (const entry of entries) {
+    if (!predicate(entry)) continue;
+    addHomePathIfExists(bucket, path.join(dirPath, entry));
+  }
+}
+
+function collectAppLeftoverPaths(home, appName, bundleId) {
+  const leftover = new Set();
+  const slug = toAppSlug(appName);
+  const bundle = String(bundleId || '').trim();
+  const supportDirs = [
+    path.join(home, 'Library', 'Application Support'),
+    path.join(home, 'Library', 'Caches'),
+    path.join(home, 'Library', 'Logs'),
+    path.join(home, 'Library', 'HTTPStorages'),
+    path.join(home, 'Library', 'WebKit'),
+  ];
+  const directNames = new Set([appName, slug].filter(Boolean));
+  if (bundle) {
+    directNames.add(bundle);
+    directNames.add(bundle.replace(/^com\./, ''));
+  }
+
+  for (const dir of supportDirs) {
+    for (const name of directNames) {
+      addHomePathIfExists(leftover, path.join(dir, name));
+    }
+  }
+
+  if (bundle) {
+    addHomePathIfExists(leftover, path.join(home, 'Library', 'Containers', bundle));
+    addHomePathIfExists(leftover, path.join(home, 'Library', 'Saved Application State', `${bundle}.savedState`));
+    addHomePathIfExists(leftover, path.join(home, 'Library', 'Preferences', `${bundle}.plist`));
+    addMatchingEntries(
+      leftover,
+      path.join(home, 'Library', 'Preferences', 'ByHost'),
+      name => name.startsWith(`${bundle}.`) && name.endsWith('.plist')
+    );
+    addMatchingEntries(
+      leftover,
+      path.join(home, 'Library', 'LaunchAgents'),
+      name => name.startsWith(bundle) && name.endsWith('.plist')
+    );
+    addMatchingEntries(
+      leftover,
+      path.join(home, 'Library', 'Group Containers'),
+      name => name === bundle || name.startsWith(`${bundle}.`) || name.endsWith(`.${bundle}`)
+    );
+  }
+
+  if (slug) {
+    const slugBundle = `com.${slug}`;
+    addHomePathIfExists(leftover, path.join(home, 'Library', 'Preferences', `${slugBundle}.plist`));
+    addHomePathIfExists(leftover, path.join(home, 'Library', 'Containers', slugBundle));
+    addHomePathIfExists(leftover, path.join(home, 'Library', 'Saved Application State', `${slugBundle}.savedState`));
+    addMatchingEntries(
+      leftover,
+      path.join(home, 'Library', 'LaunchAgents'),
+      name => name.startsWith(slugBundle) && name.endsWith('.plist')
+    );
+  }
+
+  return Array.from(leftover);
+}
+
+function isUninstallableAppPath(appPath) {
+  const resolved = path.resolve(String(appPath || ''));
+  if (!resolved.endsWith('.app')) return false;
+  return resolved.startsWith('/Applications/') || resolved.startsWith(path.join(os.homedir(), 'Applications') + path.sep);
+}
+
+function sanitizeAppLeftoverPaths(paths) {
+  const seen = new Set();
+  const out = [];
+  for (const raw of Array.isArray(paths) ? paths : []) {
+    const p = path.resolve(String(raw || ''));
+    if (!p || seen.has(p) || !isHomePath(p) || !fs.existsSync(p)) continue;
+    seen.add(p);
+    out.push(p);
+  }
+  return out;
+}
+
+async function trashTargets(targets) {
+  const trashed = [];
+  const failed = [];
+  let bytes = 0;
+  for (const targetPath of targets) {
+    if (!isHomePath(targetPath)) {
+      failed.push({ path: targetPath, error: 'Path outside home scope' });
+      continue;
+    }
+    if (!fs.existsSync(targetPath)) continue;
+    const size = pathSize(targetPath);
+    try {
+      await shell.trashItem(targetPath);
+      trashed.push(targetPath);
+      bytes += size;
+    } catch (e) {
+      failed.push({ path: targetPath, error: e.message || 'Failed to move to Trash' });
+    }
+  }
+  return { trashed, failed, bytes };
+}
+
 // ─── IPC: List Apps ────────────────────────────────────────────────────────────
 
 ipcMain.handle('list-apps', async () => {
   const dirs = ['/Applications', `${os.homedir()}/Applications`];
   const apps = [];
+  const home = os.homedir();
 
   for (const dir of dirs) {
     if (!fs.existsSync(dir)) continue;
@@ -805,152 +1782,210 @@ ipcMain.handle('list-apps', async () => {
       const name = entry.replace('.app', '');
       const appSize = dirSize(appPath);
 
-      // Find leftover files
-      const home = os.homedir();
-      const leftoverPaths = [
-        `${home}/Library/Application Support/${name}`,
-        `${home}/Library/Caches/${name}`,
-        `${home}/Library/Preferences/com.${name.toLowerCase()}.plist`,
-        `${home}/Library/Logs/${name}`,
-        `${home}/Library/Containers/com.${name.toLowerCase()}`,
-      ];
-      const leftoverSize = leftoverPaths.reduce((acc, p) => acc + dirSize(p), 0);
-
       // Get bundle info for category/icon
       let category = 'Application';
+      let bundleId = '';
+      let bundleName = name;
       try {
         const plistPath = path.join(appPath, 'Contents/Info.plist');
         if (fs.existsSync(plistPath)) {
-          const plist = run(`defaults read "${plistPath}" LSApplicationCategoryType 2>/dev/null`).trim();
-          if (plist) category = plist.split('.').pop().replace(/-/g, ' ');
+          bundleId = readPlistValue(plistPath, 'CFBundleIdentifier');
+          bundleName = readPlistValue(plistPath, 'CFBundleName') || name;
+          const plistCategory = readPlistValue(plistPath, 'LSApplicationCategoryType');
+          if (plistCategory) category = plistCategory.split('.').pop().replace(/-/g, ' ');
         }
       } catch {}
 
+      const leftoverPaths = collectAppLeftoverPaths(home, name, bundleId);
+      const leftoverSize = leftoverPaths.reduce((acc, p) => acc + pathSize(p), 0);
+
       apps.push({
-        id: name,
+        id: `app:${appPath}`,
         name,
+        bundleName,
+        bundleId: bundleId || null,
         path: appPath,
         size: appSize,
         sizeStr: bytesToHuman(appSize),
         leftover: leftoverSize,
         leftoverStr: bytesToHuman(leftoverSize),
         category: category || 'Application',
-        leftoverPaths: leftoverPaths.filter(p => fs.existsSync(p)),
+        leftoverPathCount: leftoverPaths.length,
+        leftoverPaths,
       });
     }
   }
 
-  return apps.sort((a, b) => b.size - a.size);
+  return apps.sort((a, b) => {
+    if ((b.leftover || 0) !== (a.leftover || 0)) return (b.leftover || 0) - (a.leftover || 0);
+    return (b.size || 0) - (a.size || 0);
+  });
 });
 
 // ─── IPC: Uninstall App ────────────────────────────────────────────────────────
 
-ipcMain.handle('uninstall-app', async (event, { appPath, leftoverPaths }) => {
-  const { response } = await dialog.showMessageBox(mainWindow, {
-    type: 'warning',
-    buttons: ['Cancel', 'Uninstall'],
-    defaultId: 0,
-    cancelId: 0,
-    title: 'Confirm Uninstall',
-    message: `Uninstall ${path.basename(appPath)}?`,
-    detail: 'The app and all its support files will be permanently deleted.',
-  });
+ipcMain.handle('uninstall-app', async (event, payload = {}) => {
+  const appPath = path.resolve(String(payload.appPath || ''));
+  const appName = path.basename(appPath, '.app') || 'app';
+  const skipConfirm = !!payload.skipConfirm;
+  const leftoverTargets = sanitizeAppLeftoverPaths(payload.leftoverPaths);
 
-  if (response === 0) return { success: false, cancelled: true };
+  if (!isUninstallableAppPath(appPath)) {
+    return { success: false, error: 'Unsupported app path. Only /Applications or ~/Applications bundles are allowed.' };
+  }
+  if (!fs.existsSync(appPath)) return { success: false, error: 'App not found' };
 
-  return new Promise((resolve) => {
-    // Move to trash (safer than rm -rf)
-    shell.trashItem(appPath)
-      .then(() => {
-        // Also trash leftovers
-        const promises = (leftoverPaths || []).filter(p => fs.existsSync(p)).map(p => shell.trashItem(p).catch(() => {}));
-        return Promise.allSettled(promises);
-      })
-      .then(() => resolve({ success: true }))
-      .catch(e => {
-        // Fallback: require admin
-        exec(
-          `osascript -e 'do shell script "rm -rf \\"${appPath}\\"" with administrator privileges'`,
-          (err) => resolve({ success: !err, error: err?.message })
-        );
-      });
-  });
+  if (!skipConfirm) {
+    const { response } = await dialog.showMessageBox(mainWindow, {
+      type: 'warning',
+      buttons: ['Cancel', 'Uninstall'],
+      defaultId: 0,
+      cancelId: 0,
+      title: 'Confirm Uninstall',
+      message: `Uninstall ${path.basename(appPath)}?`,
+      detail: 'The app bundle and selected support files will be moved to Trash.',
+    });
+    if (response === 0) return { success: false, cancelled: true };
+  }
+
+  let appTrashed = false;
+  try {
+    await shell.trashItem(appPath);
+    appTrashed = true;
+  } catch (e) {
+    // Fallback: require admin
+    await new Promise((resolve) => {
+      exec(
+        `osascript -e 'do shell script "rm -rf \\"${appPath}\\"" with administrator privileges'`,
+        (err) => {
+          appTrashed = !err;
+          resolve();
+        }
+      );
+    });
+    if (!appTrashed) return { success: false, error: `Could not uninstall ${appName}` };
+  }
+
+  const cleanup = await trashTargets(leftoverTargets);
+  return {
+    success: cleanup.failed.length === 0,
+    appTrashed: true,
+    cleanedLeftoverCount: cleanup.trashed.length,
+    cleanedLeftoverBytes: cleanup.bytes,
+    failedLeftovers: cleanup.failed,
+  };
+});
+
+ipcMain.handle('clean-app-leftovers', async (event, payload = {}) => {
+  const appName = String(payload.appName || 'this app');
+  const skipConfirm = !!payload.skipConfirm;
+  const targets = sanitizeAppLeftoverPaths(payload.leftoverPaths);
+  if (!targets.length) return { success: true, cleanedCount: 0, cleanedBytes: 0, failed: [] };
+
+  if (!skipConfirm) {
+    const { response } = await dialog.showMessageBox(mainWindow, {
+      type: 'question',
+      buttons: ['Cancel', 'Move to Trash'],
+      defaultId: 0,
+      cancelId: 0,
+      title: 'Cleanup Leftovers',
+      message: `Clean leftovers for ${appName}?`,
+      detail: `${targets.length} file/folder item(s) will be moved to Trash.`,
+    });
+    if (response === 0) return { success: false, cancelled: true };
+  }
+
+  const cleanup = await trashTargets(targets);
+  return {
+    success: cleanup.failed.length === 0,
+    cleanedCount: cleanup.trashed.length,
+    cleanedBytes: cleanup.bytes,
+    failed: cleanup.failed,
+  };
 });
 
 // ─── IPC: Startup Items ────────────────────────────────────────────────────────
 
 ipcMain.handle('get-startup-items', async () => {
-  const home = os.homedir();
-  const agentDirs = [
-    { dir: `${home}/Library/LaunchAgents`, system: false },
-    { dir: '/Library/LaunchAgents', system: true },
-    { dir: '/Library/LaunchDaemons', system: true },
-  ];
-
-  const items = [];
-
-  for (const { dir, system } of agentDirs) {
-    if (!fs.existsSync(dir)) continue;
-    const files = fs.readdirSync(dir).filter(f => f.endsWith('.plist'));
-
-    for (const file of files) {
-      const filePath = path.join(dir, file);
-      const name = file.replace('.plist', '');
-
-      // Check if loaded
-      const loadedOut = run(`launchctl list 2>/dev/null | grep "${name}"`).trim();
-      const enabled = loadedOut !== '';
-
-      // Estimate impact
-      let impact = 'Low';
-      const heavy = ['spotify', 'dropbox', 'googledrive', 'onedrive', 'creative cloud', 'adobe', 'microsoft'];
-      if (heavy.some(h => name.toLowerCase().includes(h))) impact = 'High';
-      else if (name.toLowerCase().includes('helper') || name.toLowerCase().includes('agent')) impact = 'Medium';
-
-      items.push({ id: file, name, filePath, enabled, impact, system });
-    }
-  }
-
-  // Also get login items via osascript
-  try {
-    const loginItems = run(`osascript -e 'tell application "System Events" to get the name of every login item' 2>/dev/null`).trim();
-    if (loginItems) {
-      loginItems.split(', ').filter(Boolean).forEach(name => {
-        if (!items.find(i => i.name.includes(name))) {
-          items.push({ id: `login-${name}`, name, enabled: true, impact: 'Medium', system: false, loginItem: true });
-        }
-      });
-    }
-  } catch {}
-
-  return items;
+  return getStartupItemsInternal();
 });
 
 // ─── IPC: Toggle Startup Item ─────────────────────────────────────────────────
 
 ipcMain.handle('toggle-startup-item', async (event, { id, filePath, enabled, loginItem, name }) => {
-  return new Promise((resolve) => {
-    if (loginItem) {
-      const action = enabled ? 'delete' : 'make';
-      const script = enabled
-        ? `tell application "System Events" to delete login item "${name}"`
-        : `tell application "System Events" to make login item at end with properties {name:"${name}", hidden:false}`;
-      exec(`osascript -e '${script}'`, (err) => resolve({ success: !err }));
-      return;
-    }
+  return toggleStartupItemInternal({ id, filePath, enabled, loginItem, name });
+});
 
-    const action = enabled ? 'unload' : 'load';
-    const cmd = `launchctl ${action} "${filePath}" 2>/dev/null`;
+// ─── IPC: Protection ───────────────────────────────────────────────────────────
 
-    exec(cmd, (err) => {
-      if (!err) { resolve({ success: true }); return; }
-      // Try with admin
-      exec(
-        `osascript -e 'do shell script "launchctl ${action} \\"${filePath}\\"" with administrator privileges'`,
-        (err2) => resolve({ success: !err2, error: err2?.message })
-      );
+ipcMain.handle('get-protection-report', async (event, options = {}) => {
+  return scanProtection(options || {});
+});
+
+ipcMain.handle('run-protection-action', async (event, payload = {}) => {
+  const action = String(payload.action || '');
+  const finding = payload.finding || {};
+
+  if (action === 'reveal-path') {
+    const targetPath = finding.path || finding.data?.filePath || finding.data?.appPath;
+    if (!targetPath) return { success: false, error: 'No path available to reveal' };
+    shell.showItemInFinder(targetPath);
+    return { success: true };
+  }
+
+  if (action === 'disable-startup') {
+    const data = finding.data || {};
+    if (!data || !data.name) return { success: false, error: 'Startup payload missing' };
+    if (!data.enabled) return { success: true, already: true };
+    const result = await toggleStartupItemInternal({
+      id: data.id,
+      filePath: data.filePath,
+      enabled: true,
+      loginItem: !!data.loginItem,
+      name: data.name,
     });
-  });
+    if (result.success) protectionCache = { ts: 0, report: null };
+    return result;
+  }
+
+  if (action === 'disable-launch-agent') {
+    const filePath = finding.data?.filePath || finding.path;
+    if (!filePath || !fs.existsSync(filePath)) return { success: false, error: 'LaunchAgent file not found' };
+    const result = await toggleStartupItemInternal({
+      filePath,
+      enabled: true,
+      loginItem: false,
+      name: path.basename(filePath, '.plist'),
+    });
+    if (result.success) protectionCache = { ts: 0, report: null };
+    return result;
+  }
+
+  if (action === 'trash-path') {
+    const targetPath = path.resolve(String(finding.path || finding.data?.filePath || finding.data?.appPath || ''));
+    if (!targetPath || !fs.existsSync(targetPath)) return { success: false, error: 'Target not found' };
+    if (!canTrashProtectionPath(targetPath)) return { success: false, error: 'Path is outside allowed cleanup scope' };
+
+    const { response } = await dialog.showMessageBox(mainWindow, {
+      type: 'warning',
+      buttons: ['Cancel', 'Move to Trash'],
+      defaultId: 0,
+      cancelId: 0,
+      title: 'Confirm Cleanup Action',
+      message: `Move ${path.basename(targetPath)} to Trash?`,
+      detail: 'This action can be undone from Trash.',
+    });
+    if (response === 0) return { success: false, cancelled: true };
+    try {
+      await shell.trashItem(targetPath);
+      protectionCache = { ts: 0, report: null };
+      return { success: true };
+    } catch (e) {
+      return { success: false, error: e.message || 'Failed to move item to Trash' };
+    }
+  }
+
+  return { success: false, error: 'Unsupported action' };
 });
 
 // ─── IPC: Privacy ─────────────────────────────────────────────────────────────

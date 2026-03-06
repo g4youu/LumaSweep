@@ -1,5 +1,5 @@
 {
-  "name": "mac-cleaner",
+  "name": "lumasweep",
   "version": "1.2.0",
   "description": "macOS System Cleaner & Optimizer",
   "author": "Gbenga Orenuga",
@@ -11,9 +11,9 @@
     "dist": "electron-builder --mac"
   },
   "build": {
-    "appId": "com.maccleaner.app",
-    "productName": "MacCleaner",
-    "copyright": "Copyright © 2026 MacCleaner",
+    "appId": "com.lumasweep.app",
+    "productName": "LumaSweep",
+    "copyright": "Copyright © 2026 LumaSweep",
     "mac": {
       "category": "public.app-category.utilities",
       "icon": "assets/icon.icns",
@@ -26,7 +26,7 @@
       "gatekeeperAssess": false
     },
     "dmg": {
-      "title": "MacCleaner Installer",
+      "title": "LumaSweep Installer",
       "contents": [
         { "x": 130, "y": 220 },
         { "x": 410, "y": 220, "type": "link", "path": "/Applications" }

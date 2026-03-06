@@ -15,14 +15,25 @@ All notable changes to this project are documented in this file.
   - Improved RAM cleanup reporting with immediate vs stabilized results
   - Session-based admin caching flow to reduce repeated password prompts
 - Improved window behavior and UX:
-  - Fixed tray "Show MacCleaner" crash after sleep/wake
+  - Fixed tray "Show LumaSweep" crash after sleep/wake
   - Added dedicated top drag strip and updated header styling
   - Moved refresh action to a less distracting location
+- Rebranded app and feature labels:
+  - App name: `LumaSweep`
+  - Smart Care -> `Pulse Hub`
+  - CPU Monitor -> `CPU Scope`
+  - RAM Cleaner -> `Memory Refresh`
+  - Disk Cleaner -> `Storage Sweep`
+  - Startup Items -> `Launch Control`
+  - Privacy Cleaner -> `Shield Center`
+  - My Clutter -> `Clutter Finder`
+  - Cloud Cleanup -> `Cloud Trim`
+  - Space Lens -> `Space Atlas`
 - Updated packaging and release metadata to `v1.2.0`.
 
 ## [1.0.0] - 2026-02-23
 
-- Initial public release of MacCleaner.
+- Initial public release of the app.
 - Added System Overview, RAM Cleaner, Disk Cleaner, Uninstaller, Startup Items, and Privacy Cleaner.
 - Fixed renderer crash caused by duplicate `api` declaration.
 - Added packaging icon asset and generated macOS DMG outputs for arm64 and x64.

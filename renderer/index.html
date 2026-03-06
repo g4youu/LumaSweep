@@ -4,101 +4,386 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self';"/>
-<title>MacCleaner</title>
+<title>LumaSweep</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
 :root{
-  --bg:#0d0d14;--sidebar:#111118;--card:#16161f;--card2:#1c1c28;
-  --border:rgba(255,255,255,0.07);--accent:#5b8af5;--accent2:#a855f7;
-  --accent3:#22d3b8;--danger:#ef4444;--text:#e8e8f0;
-  --muted:#6b6b80;--success:#22c55e;--warn:#eab308;
+  --bg:#0f0a26;--sidebar:#21104a;--card:rgba(27,15,63,0.72);--card2:rgba(45,27,92,0.62);
+  --border:rgba(255,255,255,0.14);--accent:#7f6bff;--accent2:#e548b9;
+  --accent3:#3cc6ff;--danger:#ff5d7d;--text:#efe9ff;
+  --muted:#b7add7;--success:#36d47a;--warn:#f4c84d;
+  --shell-glow-1:rgba(229,72,185,0.28);--shell-glow-2:rgba(86,127,255,0.24);
 }
-html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text)}
+html,body{
+  height:100%;overflow:hidden;color:var(--text);
+  background:
+    radial-gradient(1200px 700px at 10% 100%, rgba(229,72,185,0.22), transparent 60%),
+    radial-gradient(1000px 600px at 100% 0%, rgba(86,127,255,0.22), transparent 64%),
+    linear-gradient(150deg,#120a32 0%,#180a3f 45%,#0e1037 100%);
+}
 body{font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif}
 .window-dragbar{
   position:fixed;top:0;left:0;right:0;height:38px;
-  background:linear-gradient(180deg,rgba(22,22,31,0.95),rgba(13,13,20,0.8));
-  border-bottom:1px solid var(--border);
+  background:linear-gradient(180deg,rgba(23,14,52,0.96),rgba(16,10,38,0.8));
+  border-bottom:1px solid rgba(255,255,255,0.12);
   -webkit-app-region:drag;z-index:1000;
 }
 .app{display:flex;height:100vh}
-.sidebar{width:220px;min-width:220px;background:var(--sidebar);border-right:1px solid var(--border);
+.sidebar{width:230px;min-width:230px;background:linear-gradient(180deg,rgba(49,26,99,0.92),rgba(31,15,73,0.96));border-right:1px solid rgba(255,255,255,0.12);
   display:flex;flex-direction:column;padding:0 12px 16px;-webkit-app-region:drag}
 .sidebar *{-webkit-app-region:no-drag}
-.logo{display:flex;align-items:center;gap:10px;padding:44px 12px 18px;border-bottom:1px solid var(--border);margin-bottom:12px}
+.logo{display:flex;align-items:center;gap:10px;padding:44px 12px 18px;border-bottom:1px solid rgba(255,255,255,0.12);margin-bottom:12px}
 .logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--accent),var(--accent2));
   border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;
-  box-shadow:0 4px 14px rgba(91,138,245,0.4);flex-shrink:0}
+  box-shadow:0 8px 28px rgba(127,107,255,0.5);flex-shrink:0}
 .logo-name{font-size:15px;font-weight:700;letter-spacing:-0.3px}
-.logo-sub{font-size:10px;color:var(--muted)}
-.nav-label{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:0.8px;text-transform:uppercase;padding:10px 12px 4px}
+.logo-sub{font-size:10px;color:rgba(239,233,255,0.72)}
+.nav-label{font-size:10px;font-weight:700;color:rgba(239,233,255,0.66);letter-spacing:0.9px;text-transform:uppercase;padding:10px 12px 4px}
 .nav-item{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:8px;cursor:pointer;
-  font-size:13.5px;color:var(--muted);transition:all 0.13s;border:1px solid transparent;user-select:none}
-.nav-item:hover{color:var(--text);background:rgba(255,255,255,0.05)}
-.nav-item.active{background:rgba(91,138,245,0.12);border-color:rgba(91,138,245,0.2);color:var(--accent);font-weight:500}
+  font-size:13.5px;color:rgba(239,233,255,0.78);transition:all 0.13s;border:1px solid transparent;user-select:none}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,0.1)}
+.nav-item.active{
+  background:linear-gradient(135deg,rgba(127,107,255,0.24),rgba(229,72,185,0.18));
+  border-color:rgba(255,255,255,0.2);color:#fff;font-weight:600;
+  box-shadow:0 6px 20px rgba(40,22,88,0.5);
+}
 .nav-icon{width:18px;text-align:center;font-size:14px}
-.sidebar-footer{margin-top:auto;padding-top:12px;border-top:1px solid var(--border)}
-.status-row{display:flex;align-items:center;gap:6px;padding:8px 12px;font-size:11px;color:var(--muted)}
+.sidebar-footer{margin-top:auto;padding-top:12px;border-top:1px solid rgba(255,255,255,0.12)}
+.status-row{display:flex;align-items:center;gap:6px;padding:8px 12px;font-size:11px;color:rgba(239,233,255,0.75)}
 .dot{width:6px;height:6px;border-radius:50%;background:var(--success);animation:pulse 2s ease infinite;flex-shrink:0}
 .main{flex:1;overflow-y:auto;padding:52px 32px 28px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
 .main::-webkit-scrollbar{width:5px}
-.main::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.main::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.18);border-radius:3px}
 .page{display:none;animation:fadeIn 0.2s ease}
 .page.active{display:block}
 .page-header{
   display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;
-  background:var(--card2);border:1px solid var(--border);border-radius:14px;
-  padding:16px 18px;
+  background:linear-gradient(145deg,rgba(46,28,96,0.7),rgba(32,20,75,0.58));
+  border:1px solid rgba(255,255,255,0.16);border-radius:16px;
+  box-shadow:0 10px 35px rgba(9,6,30,0.45), inset 0 1px 0 rgba(255,255,255,0.08);
+  padding:18px 20px;backdrop-filter:blur(10px);
 }
-.page-title{font-size:26px;font-weight:700;letter-spacing:-0.5px}
-.page-sub{font-size:13px;color:var(--muted);margin-top:3px}
+.page-title{font-size:28px;font-weight:800;letter-spacing:-0.7px}
+.page-sub{font-size:13px;color:rgba(239,233,255,0.78);margin-top:3px}
 .header-actions{display:flex;gap:8px;align-items:center}
 .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:9px;
-  font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all 0.15s;font-family:inherit;white-space:nowrap}
+  font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all 0.15s;font-family:inherit;white-space:nowrap}
 .btn:disabled{opacity:0.5;cursor:not-allowed}
-.btn-primary{background:linear-gradient(135deg,var(--accent),#7b6ef6);color:#fff;box-shadow:0 4px 14px rgba(91,138,245,0.3)}
-.btn-primary:not(:disabled):hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(91,138,245,0.4)}
-.btn-ghost{background:var(--card2);color:var(--text);border:1px solid var(--border)}
-.btn-ghost:not(:disabled):hover{background:var(--card);border-color:rgba(255,255,255,0.12)}
+.btn-primary{
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#fff;
+  box-shadow:0 8px 22px rgba(90,49,206,0.42);
+}
+.btn-primary:not(:disabled):hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(90,49,206,0.56)}
+.btn-ghost{
+  background:linear-gradient(145deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03));
+  color:var(--text);border:1px solid rgba(255,255,255,0.16)
+}
+.btn-ghost:not(:disabled):hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.24)}
 .btn-danger{background:rgba(239,68,68,0.1);color:var(--danger);border:1px solid rgba(239,68,68,0.2)}
 .btn-danger:not(:disabled):hover{background:rgba(239,68,68,0.18)}
 .btn-sm{padding:6px 12px;font-size:12px;border-radius:7px}
-.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px}
+.card{
+  background:linear-gradient(145deg,rgba(35,21,78,0.75),rgba(24,16,58,0.7));
+  border:1px solid rgba(255,255,255,0.16);
+  border-radius:16px;padding:20px;margin-bottom:16px;
+  box-shadow:0 12px 34px rgba(9,6,30,0.32), inset 0 1px 0 rgba(255,255,255,0.06);
+  backdrop-filter:blur(10px);
+}
 .card:last-child{margin-bottom:0}
-.card-title{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px}
+.card-title{font-size:11px;font-weight:700;color:rgba(239,233,255,0.72);text-transform:uppercase;letter-spacing:0.65px;margin-bottom:14px}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
 .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
 .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px}
-.bar-wrap{height:6px;background:var(--card2);border-radius:3px;overflow:hidden}
+.bar-wrap{height:6px;background:rgba(255,255,255,0.1);border-radius:999px;overflow:hidden}
 .bar-fill{height:100%;border-radius:3px;transition:width 0.7s ease}
 .gauge-wrap{position:relative;display:inline-block}
 .gauge-text{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .gauge-pct{font-size:28px;font-weight:800;letter-spacing:-1px;line-height:1}
-.gauge-label{font-size:10px;color:var(--muted);margin-top:2px}
-.app-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)}
+.gauge-label{font-size:10px;color:rgba(239,233,255,0.72);margin-top:2px}
+.app-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.1)}
 .app-row:last-child{border-bottom:none}
+.app-row.selected{background:rgba(127,107,255,0.12);border-radius:10px;padding:11px 10px}
 .app-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
 .app-info{flex:1;min-width:0}
 .app-name{font-size:13.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.app-meta{font-size:11px;color:var(--muted);margin-top:2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.app-meta{font-size:11px;color:rgba(239,233,255,0.68);margin-top:2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.app-check{accent-color:var(--accent);transform:translateY(1px)}
+.apps-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.apps-search{
+  min-width:210px;flex:1;background:var(--card2);color:var(--text);border:1px solid var(--border);
+  border-radius:8px;padding:8px 10px;font-size:12px;outline:none
+}
+.apps-inline-check{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);user-select:none}
+.apps-meta{font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:8px}
+.apps-chip{
+  border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);
+  border-radius:999px;padding:4px 9px;font-size:11px;color:rgba(239,233,255,0.82)
+}
 .tag{display:inline-flex;align-items:center;font-size:11px;font-weight:500;padding:2px 8px;border-radius:20px}
-.toggle{width:38px;height:22px;border-radius:11px;background:var(--card2);border:1px solid var(--border);
+.toggle{width:38px;height:22px;border-radius:11px;background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.16);
   cursor:pointer;position:relative;transition:all 0.2s;flex-shrink:0}
 .toggle.on{background:var(--accent);border-color:var(--accent)}
 .toggle::after{content:'';position:absolute;width:16px;height:16px;background:#fff;border-radius:50%;
   top:2px;left:2px;transition:transform 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.3)}
 .toggle.on::after{transform:translateX(16px)}
 .notice{border-radius:12px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;animation:slideIn 0.25s ease}
-.notice.success{background:rgba(34,197,94,0.07);border:1px solid rgba(34,197,94,0.18)}
-.notice.error{background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.18)}
-.skel{background:linear-gradient(90deg,var(--card2) 25%,rgba(255,255,255,0.04) 50%,var(--card2) 75%);
+.notice.success{background:rgba(54,212,122,0.12);border:1px solid rgba(54,212,122,0.34)}
+.notice.error{background:rgba(255,93,125,0.12);border:1px solid rgba(255,93,125,0.34)}
+.notice.info{background:rgba(127,107,255,0.14);border:1px solid rgba(127,107,255,0.34)}
+.skel{background:linear-gradient(90deg,rgba(255,255,255,0.08) 25%,rgba(255,255,255,0.2) 50%,rgba(255,255,255,0.08) 75%);
   background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:6px}
 .action-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
-.action-card{background:var(--card2);border:1px solid var(--border);border-radius:12px;
+.action-card{background:linear-gradient(145deg,rgba(255,255,255,0.07),rgba(255,255,255,0.02));border:1px solid rgba(255,255,255,0.16);border-radius:12px;
   padding:16px 12px;text-align:center;cursor:pointer;transition:all 0.15s;user-select:none}
-.action-card:hover{background:var(--card);border-color:rgba(255,255,255,0.12);transform:translateY(-1px)}
+.action-card:hover{background:rgba(255,255,255,0.14);border-color:rgba(255,255,255,0.26);transform:translateY(-1px)}
 .action-icon{font-size:24px;margin-bottom:6px}
-.action-label{font-size:11px;font-weight:500;color:var(--muted)}
+.action-label{font-size:11px;font-weight:600;color:rgba(239,233,255,0.76)}
+.smart-hero{
+  display:grid;grid-template-columns:1.2fr 0.8fr;gap:18px;
+  background:
+    radial-gradient(500px 180px at 10% 0%, rgba(255,255,255,0.12), transparent 70%),
+    linear-gradient(125deg,rgba(142,84,233,0.32),rgba(58,109,240,0.28));
+}
+.smart-hero-left{display:flex;flex-direction:column;gap:10px;justify-content:center}
+.smart-chip{
+  display:inline-flex;align-items:center;width:max-content;padding:5px 10px;border-radius:999px;
+  background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.24);
+  font-size:11px;font-weight:600;color:rgba(239,233,255,0.86);letter-spacing:0.3px
+}
+.smart-title{font-size:34px;font-weight:800;line-height:1.05;letter-spacing:-0.9px}
+.smart-subtext{font-size:13px;color:rgba(239,233,255,0.82);max-width:560px}
+.smart-tags{display:flex;flex-wrap:wrap;gap:8px}
+.tag.soft{background:rgba(255,255,255,0.09);color:rgba(239,233,255,0.84);border:1px solid rgba(255,255,255,0.18)}
+.smart-orb-wrap{display:flex;align-items:center;justify-content:center}
+.smart-orb{
+  width:250px;height:250px;border-radius:50%;
+  background:
+    radial-gradient(62% 62% at 35% 25%, rgba(255,255,255,0.32), rgba(255,255,255,0.02) 65%),
+    radial-gradient(70% 70% at 70% 75%, rgba(229,72,185,0.38), transparent 72%),
+    linear-gradient(145deg,rgba(45,35,97,0.94),rgba(17,16,52,0.96));
+  border:1px solid rgba(255,255,255,0.24);
+  box-shadow:0 20px 50px rgba(11,8,41,0.55), inset 0 1px 0 rgba(255,255,255,0.24);
+  display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center
+}
+.smart-orb-label{font-size:12px;color:rgba(239,233,255,0.74);text-transform:uppercase;letter-spacing:0.7px}
+.smart-orb-value{font-size:46px;font-weight:800;letter-spacing:-1px;margin-top:3px}
+.smart-orb-meta{font-size:12px;color:rgba(239,233,255,0.78)}
+.smart-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.care-card{
+  border-radius:16px;padding:18px;border:1px solid rgba(255,255,255,0.16);
+  display:flex;flex-direction:column;gap:8px;min-height:172px;
+  box-shadow:0 12px 34px rgba(9,6,30,0.28), inset 0 1px 0 rgba(255,255,255,0.08);
+  backdrop-filter:blur(8px);cursor:pointer;transition:all 0.16s ease
+}
+.care-card:hover{transform:translateY(-2px);border-color:rgba(255,255,255,0.22)}
+.care-card.cleanup{background:linear-gradient(150deg,rgba(31,120,83,0.42),rgba(20,48,52,0.58))}
+.care-card.protection{background:linear-gradient(150deg,rgba(173,53,143,0.38),rgba(56,20,64,0.62))}
+.care-card.performance{background:linear-gradient(150deg,rgba(67,83,209,0.4),rgba(25,26,73,0.64))}
+.care-card.applications{background:linear-gradient(150deg,rgba(61,130,224,0.36),rgba(28,36,95,0.62))}
+.care-card.clutter{background:linear-gradient(150deg,rgba(95,180,172,0.32),rgba(38,44,103,0.64))}
+.care-card.wide{grid-column:span 2}
+.care-kicker{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.65px;color:rgba(239,233,255,0.75)}
+.care-value{font-size:40px;font-weight:800;letter-spacing:-1.1px;line-height:1;color:#fff}
+.care-copy{font-size:12.5px;color:rgba(239,233,255,0.82);margin-bottom:auto}
+.care-card .btn{width:max-content}
+.coming-card{display:flex;align-items:center;gap:14px}
+.coming-card.blue{background:linear-gradient(145deg,rgba(49,121,214,0.3),rgba(19,61,104,0.5))}
+.coming-icon{
+  width:54px;height:54px;border-radius:14px;display:flex;align-items:center;justify-content:center;
+  font-size:30px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.16);flex-shrink:0
+}
+.coming-title{font-size:20px;font-weight:700;letter-spacing:-0.4px}
+.coming-copy{font-size:13px;color:rgba(239,233,255,0.78);margin-top:4px}
+.road-list{display:flex;flex-direction:column;gap:9px}
+.road-row{
+  display:flex;justify-content:space-between;gap:12px;align-items:center;
+  font-size:13px;padding:10px 12px;border:1px solid rgba(255,255,255,0.1);border-radius:10px;
+  background:rgba(255,255,255,0.03)
+}
+.road-row span{color:rgba(239,233,255,0.74)}
+.road-row strong{font-size:12px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase}
+.road-row strong.ready{color:var(--success)}
+.road-row strong.next{color:var(--warn)}
+.road-row strong.plan{color:var(--accent3)}
+.lens-map{
+  min-height:320px;border-radius:14px;border:1px solid rgba(255,255,255,0.12);
+  background:
+    radial-gradient(220px 220px at 26% 38%, rgba(127,107,255,0.36), transparent 72%),
+    radial-gradient(180px 180px at 68% 45%, rgba(229,72,185,0.35), transparent 72%),
+    radial-gradient(140px 140px at 42% 74%, rgba(60,198,255,0.28), transparent 72%),
+    linear-gradient(145deg,rgba(24,16,58,0.78),rgba(18,13,46,0.72));
+  display:flex;align-items:flex-end;justify-content:flex-end;padding:16px
+}
+.lens-map .btn{background:linear-gradient(130deg,var(--accent2),var(--accent));border:0}
+.provider-list{display:flex;flex-direction:column;gap:10px}
+.provider-row{
+  display:grid;grid-template-columns:20px 1fr auto;gap:10px;align-items:center;
+  padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);
+  background:rgba(255,255,255,0.04)
+}
+.provider-row .status{font-size:11px;padding:3px 8px;border-radius:999px;border:1px solid rgba(255,255,255,0.16)}
+.provider-row .status.on{color:var(--success);border-color:rgba(54,212,122,0.35);background:rgba(54,212,122,0.12)}
+.provider-row .status.soon{color:var(--warn);border-color:rgba(244,200,77,0.35);background:rgba(244,200,77,0.1)}
+.provider-row .meta{font-size:12px;color:rgba(239,233,255,0.72)}
+.status-dot{width:10px;height:10px;border-radius:50%;background:var(--success)}
+.status-dot.soon{background:var(--warn)}
+.cloud-hero{
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  background:
+    radial-gradient(420px 180px at 12% 0%, rgba(60,198,255,0.2), transparent 72%),
+    linear-gradient(140deg,rgba(29,77,147,0.32),rgba(33,36,92,0.44));
+}
+.cloud-hero-title{font-size:21px;font-weight:800;letter-spacing:-0.5px}
+.cloud-hero-copy{font-size:13px;color:rgba(239,233,255,0.82);margin-top:6px;max-width:740px}
+.cloud-hero-meta{font-size:11px;color:rgba(239,233,255,0.72);margin-top:8px}
+.cloud-provider-list{display:flex;flex-direction:column;gap:10px}
+.cloud-provider{
+  border:1px solid rgba(255,255,255,0.13);
+  border-radius:12px;padding:12px 14px;
+  background:linear-gradient(145deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02));
+}
+.cloud-provider.offline{opacity:0.74}
+.cloud-provider-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.cloud-provider-name{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700;letter-spacing:-0.2px}
+.cloud-provider-icon{
+  width:24px;height:24px;border-radius:7px;display:flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.14);font-size:13px
+}
+.cloud-badge{
+  font-size:11px;padding:3px 8px;border-radius:999px;
+  border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:var(--muted)
+}
+.cloud-badge.on{color:var(--success);border-color:rgba(54,212,122,0.38);background:rgba(54,212,122,0.12)}
+.cloud-badge.off{color:var(--warn);border-color:rgba(244,200,77,0.38);background:rgba(244,200,77,0.12)}
+.cloud-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
+.cloud-metric{
+  border:1px solid rgba(255,255,255,0.1);border-radius:9px;padding:8px 10px;background:rgba(0,0,0,0.12);
+  display:flex;flex-direction:column;gap:3px
+}
+.cloud-metric span{font-size:11px;color:rgba(239,233,255,0.72)}
+.cloud-metric strong{font-size:13px;font-weight:700;line-height:1.1}
+.cloud-roots{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.cloud-root{
+  font-size:10px;line-height:1.4;padding:3px 7px;border-radius:999px;
+  background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.14);color:rgba(239,233,255,0.78)
+}
+.cloud-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.lens-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-bottom:10px}
+.lens-control{display:flex;flex-direction:column;gap:4px;min-width:130px}
+.lens-control label{font-size:10px;color:rgba(239,233,255,0.7);text-transform:uppercase;letter-spacing:0.55px}
+.lens-control select,.lens-control input{
+  background:var(--card2);color:var(--text);border:1px solid var(--border);
+  border-radius:8px;padding:7px 9px;font-size:12px;outline:none;min-height:33px
+}
+.lens-control input::placeholder{color:rgba(239,233,255,0.45)}
+.lens-toolbar-actions{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+.lens-toolbar-meta{font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px}
+.lens-chip{
+  border:1px solid rgba(255,255,255,0.12);border-radius:999px;padding:4px 9px;
+  background:rgba(255,255,255,0.06);font-size:11px;color:rgba(239,233,255,0.82)
+}
+.lens-list{display:flex;flex-direction:column;gap:8px;max-height:430px;overflow:auto;padding-right:4px}
+.lens-row{
+  display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center;
+  border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px 12px;background:rgba(255,255,255,0.03)
+}
+.lens-row:hover{background:rgba(255,255,255,0.08)}
+.lens-row.selected{
+  border-color:rgba(127,107,255,0.42);
+  background:linear-gradient(135deg,rgba(127,107,255,0.18),rgba(229,72,185,0.12));
+}
+.lens-check{accent-color:var(--accent);transform:translateY(1px)}
+.lens-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lens-meta{font-size:11px;color:rgba(239,233,255,0.72);margin-top:3px}
+.lens-pill{font-size:11px;padding:3px 8px;border-radius:999px;border:1px solid rgba(255,255,255,0.18)}
+.lens-pill.dir{color:var(--accent3);background:rgba(60,198,255,0.12)}
+.lens-pill.file{color:#dfd8ff;background:rgba(255,255,255,0.08)}
+.lens-crumbs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.lens-crumb{font-size:11px;padding:4px 8px;border-radius:999px;border:1px solid rgba(255,255,255,0.16);background:rgba(255,255,255,0.06);cursor:pointer}
+.lens-crumb:hover{background:rgba(255,255,255,0.12)}
+.lens-bubble-wrap{display:flex;flex-wrap:wrap;gap:12px;align-content:flex-start;min-height:320px}
+.lens-bubble{
+  border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+  border:1px solid rgba(255,255,255,0.2);
+  background:
+    radial-gradient(68% 68% at 30% 22%, rgba(255,255,255,0.34), rgba(255,255,255,0.04) 68%),
+    linear-gradient(145deg,rgba(127,107,255,0.34),rgba(229,72,185,0.3));
+  box-shadow:0 10px 24px rgba(11,8,41,0.45);
+  cursor:pointer;transition:all 0.14s ease;position:relative;
+}
+.lens-bubble:hover{transform:translateY(-2px);border-color:rgba(255,255,255,0.32)}
+.lens-bubble.selected{
+  border-color:rgba(54,212,122,0.6);
+  box-shadow:0 10px 24px rgba(11,8,41,0.45),0 0 0 2px rgba(54,212,122,0.18) inset;
+}
+.lens-select-badge{
+  position:absolute;top:6px;right:6px;width:20px;height:20px;border-radius:50%;
+  border:1px solid rgba(255,255,255,0.22);background:rgba(16,12,40,0.82);color:var(--text);
+  font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer
+}
+.lens-select-badge.on{background:rgba(54,212,122,0.25);border-color:rgba(54,212,122,0.65);color:#e8fff2}
+.lens-b-name{font-size:11px;font-weight:700;max-width:90%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lens-b-size{font-size:10px;color:rgba(239,233,255,0.78)}
+.dup-group-list{display:flex;flex-direction:column;gap:8px;max-height:430px;overflow:auto;padding-right:4px}
+.dup-group-item{
+  padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);
+  background:rgba(255,255,255,0.03);cursor:pointer;transition:all 0.14s ease
+}
+.dup-group-item:hover{background:rgba(255,255,255,0.08)}
+.dup-group-item.active{
+  border-color:rgba(127,107,255,0.5);
+  background:linear-gradient(135deg,rgba(127,107,255,0.2),rgba(229,72,185,0.14));
+}
+.dup-group-top{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.dup-group-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dup-group-meta{font-size:11px;color:rgba(239,233,255,0.75);margin-top:4px}
+.dup-detail-list{display:flex;flex-direction:column;gap:8px}
+.dup-file-row{
+  display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:start;
+  padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);
+  background:rgba(255,255,255,0.03)
+}
+.dup-file-row.keep{border-color:rgba(54,212,122,0.34);background:rgba(54,212,122,0.08)}
+.dup-file-main{min-width:0}
+.dup-file-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dup-file-meta{font-size:11px;color:rgba(239,233,255,0.72);margin-top:3px;word-break:break-all}
+.dup-actions{display:flex;gap:8px;margin-top:12px}
+.dup-empty{padding:28px 12px;text-align:center;color:var(--muted)}
+input.dup-check{accent-color:var(--accent);transform:translateY(2px)}
+.clutter-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.clutter-control{display:flex;flex-direction:column;gap:4px;min-width:150px}
+.clutter-control label{font-size:10px;color:rgba(239,233,255,0.7);text-transform:uppercase;letter-spacing:0.55px}
+.clutter-control select,.clutter-control input{
+  background:var(--card2);color:var(--text);border:1px solid var(--border);
+  border-radius:8px;padding:7px 9px;font-size:12px;outline:none;min-height:33px
+}
+.clutter-control input::placeholder{color:rgba(239,233,255,0.45)}
+.clutter-toolbar-actions{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+.clutter-toolbar-meta{font-size:12px;color:var(--muted);margin-top:10px;display:flex;flex-wrap:wrap;gap:7px}
+.clutter-chip{
+  border:1px solid rgba(255,255,255,0.12);border-radius:999px;padding:4px 9px;
+  background:rgba(255,255,255,0.06);font-size:11px;color:rgba(239,233,255,0.82)
+}
+@media (max-width: 1300px){
+  .smart-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width: 1120px){
+  .smart-hero{grid-template-columns:1fr}
+  .smart-orb{width:210px;height:210px}
+  .smart-title{font-size:28px}
+  .grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width: 940px){
+  .grid-2,.grid-3,.grid-4,.smart-grid{grid-template-columns:1fr}
+  .care-card.wide{grid-column:span 1}
+  .sidebar{width:210px;min-width:210px}
+  .cloud-hero{flex-direction:column;align-items:flex-start}
+  .cloud-metrics{grid-template-columns:1fr}
+  .clutter-toolbar-actions{margin-left:0}
+  .lens-toolbar-actions{margin-left:0}
+  .lens-row{grid-template-columns:auto 1fr auto}
+}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
@@ -115,37 +400,106 @@ body{font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif}
   <div class="sidebar">
     <div class="logo">
       <div class="logo-icon">✦</div>
-      <div><div class="logo-name">MacCleaner</div><div class="logo-sub">System Utility</div></div>
+      <div><div class="logo-name">LumaSweep</div><div class="logo-sub">System Utility</div></div>
     </div>
-    <div class="nav-label">Tools</div>
-    <div class="nav-item active" data-page="dashboard"><span class="nav-icon">⚡</span>Overview</div>
-    <div class="nav-item" data-page="cpu"><span class="nav-icon">🧮</span>CPU Monitor</div>
-    <div class="nav-item" data-page="ram"><span class="nav-icon">🧠</span>RAM Cleaner</div>
-    <div class="nav-item" data-page="disk"><span class="nav-icon">💾</span>Disk Cleaner</div>
-    <div class="nav-item" data-page="uninstall"><span class="nav-icon">📦</span>Uninstaller</div>
-    <div class="nav-item" data-page="startup"><span class="nav-icon">🚀</span>Startup Items</div>
-    <div class="nav-item" data-page="privacy"><span class="nav-icon">🔒</span>Privacy Cleaner</div>
+    <div class="nav-label">Smart Suite</div>
+    <div class="nav-item active" data-page="smart-care"><span class="nav-icon">🖥️</span>Pulse Hub</div>
+    <div class="nav-item" data-page="dashboard"><span class="nav-icon">⚡</span>Overview</div>
+    <div class="nav-item" data-page="cpu"><span class="nav-icon">🧮</span>CPU Scope</div>
+    <div class="nav-item" data-page="ram"><span class="nav-icon">🧠</span>Memory Refresh</div>
+    <div class="nav-item" data-page="disk"><span class="nav-icon">💾</span>Storage Sweep</div>
+    <div class="nav-item" data-page="uninstall"><span class="nav-icon">📦</span>App Manager</div>
+    <div class="nav-item" data-page="startup"><span class="nav-icon">🚀</span>Launch Control</div>
+    <div class="nav-item" data-page="privacy"><span class="nav-icon">🔒</span>Shield</div>
+    <div class="nav-item" data-page="clutter"><span class="nav-icon">🧬</span>Clutter Finder</div>
+    <div class="nav-item" data-page="cloud"><span class="nav-icon">☁️</span>Cloud Trim</div>
+    <div class="nav-item" data-page="lens"><span class="nav-icon">🔎</span>Space Atlas</div>
     <div class="sidebar-footer">
       <div class="status-row"><div class="dot"></div>System monitoring active <span onclick="refreshActivePage()" style="margin-left:auto;cursor:pointer;color:var(--muted);opacity:0.75">↻ Refresh</span></div>
       <div style="padding:0 12px 8px">
         <label for="refresh-mode" style="display:block;font-size:10px;color:var(--muted);margin-bottom:6px">Refresh Mode</label>
         <select id="refresh-mode" style="width:100%;background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-size:11px;outline:none">
           <option value="real-time">Real-time</option>
+          <option value="live">Live (No Delay)</option>
           <option value="balanced">Balanced</option>
           <option value="power-saver">Power Saver</option>
         </select>
       </div>
-      <div id="app-version" style="padding:0 12px;font-size:10px;color:#2a2a40">MacCleaner</div>
+      <div id="app-version" style="padding:0 12px;font-size:10px;color:#2a2a40">LumaSweep</div>
     </div>
   </div>
   <div class="main">
 
-    <!-- DASHBOARD -->
-    <div class="page active" id="page-dashboard">
+    <!-- PULSE HUB -->
+    <div class="page active" id="page-smart-care">
       <div class="page-header">
-        <div><div class="page-title">System Overview</div><div class="page-sub" id="dash-sub">Loading…</div></div>
+        <div><div class="page-title">Pulse Hub</div><div class="page-sub" id="smart-sub">Loading system profile…</div></div>
         <div class="header-actions">
-          <button class="btn btn-primary" id="scan-btn" onclick="runScan()">⟳ Smart Scan</button>
+          <button class="btn btn-ghost btn-sm" onclick="nav('dashboard')">Open Overview</button>
+          <button class="btn btn-primary" id="smart-scan-btn" onclick="runScan()">⟳ Run Pulse Hub</button>
+        </div>
+      </div>
+      <div id="smart-notice"></div>
+      <div class="card smart-hero">
+        <div class="smart-hero-left">
+          <div class="smart-chip">Mac Health Engine</div>
+          <div class="smart-title">Give your Mac smart care</div>
+          <div class="smart-subtext">Real-time insights plus guided cleanup. Start with one scan, then run tools by category.</div>
+          <div class="smart-tags">
+            <span class="tag soft">Real-time monitoring</span>
+            <span class="tag soft">Safe cleanup paths</span>
+            <span class="tag soft">No background daemons</span>
+          </div>
+        </div>
+        <div class="smart-orb-wrap">
+          <div id="smart-orb" class="smart-orb">
+            <div class="smart-orb-label">System Health</div>
+            <div class="smart-orb-value">--</div>
+            <div class="smart-orb-meta">Analyzing…</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="smart-grid" id="smart-grid">
+        <div class="care-card cleanup" onclick="nav('disk')">
+          <div class="care-kicker">Cleanup</div>
+          <div class="care-value" id="care-cleanup">--</div>
+          <div class="care-copy">Junk candidates to review</div>
+          <button class="btn btn-ghost btn-sm">Review</button>
+        </div>
+        <div class="care-card protection" onclick="nav('privacy')">
+          <div class="care-kicker">Shield</div>
+          <div class="care-value" id="care-protection">--</div>
+          <div class="care-copy">Privacy traces available to clear</div>
+          <button class="btn btn-ghost btn-sm">Review</button>
+        </div>
+        <div class="care-card performance" onclick="nav('cpu')">
+          <div class="care-kicker">Launch Control</div>
+          <div class="care-value" id="care-performance">--</div>
+          <div class="care-copy">Current CPU + RAM load</div>
+          <button class="btn btn-ghost btn-sm">Review</button>
+        </div>
+        <div class="care-card applications wide" onclick="nav('uninstall')">
+          <div class="care-kicker">App Manager</div>
+          <div class="care-value" id="care-apps">--</div>
+          <div class="care-copy">Installed apps ready for review and uninstall cleanup</div>
+          <button class="btn btn-ghost btn-sm">Review</button>
+        </div>
+        <div class="care-card clutter wide" onclick="nav('clutter')">
+          <div class="care-kicker">Clutter Finder</div>
+          <div class="care-value" id="care-clutter">Scan Ready</div>
+          <div class="care-copy">Duplicate finder with keep-rule and filtered bulk cleanup</div>
+          <button class="btn btn-ghost btn-sm">Review</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="page" id="page-dashboard">
+      <div class="page-header">
+        <div><div class="page-title">System Deck</div><div class="page-sub" id="dash-sub">Loading…</div></div>
+        <div class="header-actions">
+          <button class="btn btn-primary" id="scan-btn" onclick="runScan()">⟳ Health Scan</button>
         </div>
       </div>
       <div id="dash-notice"></div>
@@ -162,9 +516,9 @@ body{font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif}
       <div class="card">
         <div class="card-title">Quick Actions</div>
         <div class="action-grid">
-          <div class="action-card" onclick="nav('cpu')"><div class="action-icon">🧮</div><div class="action-label">CPU Monitor</div></div>
+          <div class="action-card" onclick="nav('cpu')"><div class="action-icon">🧮</div><div class="action-label">CPU Scope</div></div>
           <div class="action-card" onclick="nav('ram')"><div class="action-icon">⚡</div><div class="action-label">Clean RAM</div></div>
-          <div class="action-card" onclick="nav('disk')"><div class="action-icon">🗑️</div><div class="action-label">Disk Cleaner</div></div>
+          <div class="action-card" onclick="nav('disk')"><div class="action-icon">🗑️</div><div class="action-label">Storage Sweep</div></div>
           <div class="action-card" onclick="nav('uninstall')"><div class="action-icon">📦</div><div class="action-label">Uninstall Apps</div></div>
           <div class="action-card" onclick="nav('startup')"><div class="action-icon">🚀</div><div class="action-label">Startup Items</div></div>
           <div class="action-card" onclick="nav('privacy')"><div class="action-icon">🔒</div><div class="action-label">Privacy</div></div>
@@ -175,7 +529,7 @@ body{font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif}
     <!-- CPU -->
     <div class="page" id="page-cpu">
       <div class="page-header">
-        <div><div class="page-title">CPU Monitor</div><div class="page-sub">Live processor usage and top CPU processes</div></div>
+        <div><div class="page-title">CPU Scope</div><div class="page-sub">Live processor usage and top CPU processes</div></div>
         <div class="header-actions">
           <button class="btn btn-ghost btn-sm" onclick="loadCPU()">↻ Refresh</button>
           <button class="btn btn-ghost btn-sm" onclick="openActivityMonitor()">📊 Activity Monitor</button>
@@ -189,7 +543,7 @@ body{font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif}
           <div style="font-size:11px;color:var(--muted)">Read-only monitoring. No process killing is performed.</div>
         </div>
         <div class="card">
-          <div class="card-title">Performance Guidance</div>
+          <div class="card-title">CPU Guidance</div>
           <div id="cpu-advice"><div class="skel" style="height:200px;border-radius:8px"></div></div>
         </div>
       </div>
@@ -199,7 +553,7 @@ body{font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif}
     <!-- RAM -->
     <div class="page" id="page-ram">
       <div class="page-header">
-        <div><div class="page-title">RAM Cleaner</div><div class="page-sub">Free up inactive memory for better performance</div></div>
+        <div><div class="page-title">Memory Refresh</div><div class="page-sub">Free up inactive memory for better performance</div></div>
         <div class="header-actions"><button class="btn btn-ghost btn-sm" onclick="loadRAM()">↻ Refresh</button></div>
       </div>
       <div id="ram-notice"></div>
@@ -219,7 +573,7 @@ body{font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif}
     <!-- DISK -->
     <div class="page" id="page-disk">
       <div class="page-header">
-        <div><div class="page-title">Disk Cleaner</div><div class="page-sub">Remove junk files, caches, and temporary data</div></div>
+        <div><div class="page-title">Storage Sweep</div><div class="page-sub">Remove junk files, caches, and temporary data</div></div>
         <div class="header-actions"><button class="btn btn-ghost btn-sm" onclick="loadDisk()">↻ Rescan</button></div>
       </div>
       <div id="disk-notice"></div>
@@ -234,15 +588,26 @@ body{font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif}
     <!-- UNINSTALL -->
     <div class="page" id="page-uninstall">
       <div class="page-header">
-        <div><div class="page-title">App Uninstaller</div><div class="page-sub">Completely remove apps and all leftover files</div></div>
-        <div class="header-actions"><button class="btn btn-ghost btn-sm" onclick="loadApps()">↻ Rescan</button></div>
+        <div><div class="page-title">App Manager</div><div class="page-sub">Completely remove apps and all leftover files</div></div>
+        <div class="header-actions">
+          <button class="btn btn-ghost btn-sm" onclick="clearAppSelection()">Clear Selection</button>
+          <button class="btn btn-ghost btn-sm" onclick="loadApps()">↻ Rescan</button>
+        </div>
       </div>
       <div id="uninstall-notice"></div>
       <div class="card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-          <div class="card-title" style="margin:0">Installed Applications</div>
+          <div class="card-title" style="margin:0">App Inventory</div>
           <span id="app-count" style="font-size:12px;color:var(--muted)"></span>
         </div>
+        <div class="apps-toolbar">
+          <input id="apps-search" class="apps-search" type="search" placeholder="Search apps by name, bundle ID, or category" oninput="setAppSearch(this.value)">
+          <label class="apps-inline-check"><input id="apps-only-leftovers" type="checkbox" onchange="setAppsOnlyLeftovers(this.checked)">Show leftovers only</label>
+          <button class="btn btn-ghost btn-sm" onclick="selectAppsWithLeftovers()">Select With Leftovers</button>
+          <button class="btn btn-ghost btn-sm" id="apps-batch-clean-btn" onclick="batchCleanLeftovers()">🧹 Clean Leftovers</button>
+          <button class="btn btn-danger btn-sm" id="apps-batch-uninstall-btn" onclick="batchUninstallSelected()">🗑️ Uninstall Selected</button>
+        </div>
+        <div id="apps-meta" class="apps-meta"></div>
         <div id="app-list"><div class="skel" style="height:280px;border-radius:8px"></div></div>
       </div>
     </div>
@@ -253,6 +618,7 @@ body{font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif}
         <div><div class="page-title">Startup Items</div><div class="page-sub">Control what launches when your Mac starts</div></div>
         <div class="header-actions"><button class="btn btn-ghost btn-sm" onclick="loadStartup()">↻ Refresh</button></div>
       </div>
+      <div id="startup-notice"></div>
       <div class="grid-2" style="margin-bottom:16px">
         <div class="card"><div class="card-title">🚀 Active Items</div><div style="font-size:36px;font-weight:800;color:var(--warn)" id="startup-active">—</div></div>
         <div class="card"><div class="card-title">⚠️ High Impact</div><div style="font-size:36px;font-weight:800;color:var(--danger)" id="startup-high">—</div></div>
@@ -263,11 +629,178 @@ body{font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif}
     <!-- PRIVACY -->
     <div class="page" id="page-privacy">
       <div class="page-header">
-        <div><div class="page-title">Privacy Cleaner</div><div class="page-sub">Remove traces and protect your digital privacy</div></div>
-        <div class="header-actions"><button class="btn btn-primary" onclick="clearAllPrivacy()">🔒 Clear All</button></div>
+        <div><div class="page-title">Shield Center</div><div class="page-sub">Threat checks, startup hardening, and privacy trace cleanup</div></div>
+        <div class="header-actions">
+          <button class="btn btn-ghost btn-sm" onclick="loadProtection(true)">↻ Scan Shield</button>
+          <button class="btn btn-primary" onclick="clearAllPrivacy()">🧹 Clear Privacy Traces</button>
+        </div>
       </div>
       <div id="privacy-notice"></div>
+      <div class="grid-4">
+        <div class="card"><div class="card-title">Shield Score</div><div id="protection-score" style="font-size:34px;font-weight:800;line-height:1.1">—</div><div id="protection-status" style="font-size:12px;color:var(--muted);margin-top:6px">Not scanned</div></div>
+        <div class="card"><div class="card-title">Critical</div><div id="protection-critical" style="font-size:34px;font-weight:800;color:var(--danger);line-height:1.1">—</div><div style="font-size:12px;color:var(--muted);margin-top:6px">Immediate attention</div></div>
+        <div class="card"><div class="card-title">Warnings</div><div id="protection-warning" style="font-size:34px;font-weight:800;color:var(--warn);line-height:1.1">—</div><div style="font-size:12px;color:var(--muted);margin-top:6px">Review recommended</div></div>
+        <div class="card"><div class="card-title">New Since Last Scan</div><div id="protection-new" style="font-size:34px;font-weight:800;color:var(--accent3);line-height:1.1">—</div><div id="protection-last" style="font-size:12px;color:var(--muted);margin-top:6px">Baseline not available</div></div>
+      </div>
+      <div class="card"><div class="card-title">Threat Findings</div><div id="protection-findings"></div></div>
       <div class="card"><div class="card-title">Privacy Traces</div><div id="privacy-list"></div></div>
+    </div>
+
+    <!-- CLUTTER -->
+    <div class="page" id="page-clutter">
+      <div class="page-header">
+        <div><div class="page-title">Clutter Finder</div><div class="page-sub">Find duplicates and remove large unnecessary files</div></div>
+        <div class="header-actions">
+          <button class="btn btn-ghost btn-sm" onclick="resetDuplicateResults()">Reset</button>
+          <button class="btn btn-primary" id="clutter-scan-btn" onclick="scanDuplicates()">🔎 Scan Duplicates</button>
+        </div>
+      </div>
+      <div id="clutter-notice"></div>
+      <div class="card">
+        <div class="card-title">Duplicate Controls</div>
+        <div class="clutter-toolbar">
+          <div class="clutter-control">
+            <label for="clutter-scan-profile">Scan Depth</label>
+            <select id="clutter-scan-profile" onchange="setClutterScanProfile(this.value)">
+              <option value="quick">Quick</option>
+              <option value="balanced" selected>Balanced</option>
+              <option value="deep">Deep</option>
+            </select>
+          </div>
+          <div class="clutter-control">
+            <label for="clutter-keep-mode">Keep Rule</label>
+            <select id="clutter-keep-mode" onchange="setClutterKeepMode(this.value)">
+              <option value="newest" selected>Keep Newest</option>
+              <option value="oldest">Keep Oldest</option>
+              <option value="shortest-path">Keep Shortest Path</option>
+            </select>
+          </div>
+          <div class="clutter-control">
+            <label for="clutter-filter-type">Type Filter</label>
+            <select id="clutter-filter-type" onchange="setClutterFilterType(this.value)">
+              <option value="all" selected>All Types</option>
+              <option value="image">Images</option>
+              <option value="video">Videos</option>
+              <option value="archive">Archives</option>
+              <option value="document">Documents</option>
+              <option value="audio">Audio</option>
+              <option value="code">Code</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="clutter-control" style="min-width:220px;flex:1">
+            <label for="clutter-search">Search</label>
+            <input id="clutter-search" type="search" placeholder="Filter by file name or path" oninput="setClutterSearch(this.value)">
+          </div>
+          <div class="clutter-toolbar-actions">
+            <button class="btn btn-ghost btn-sm" onclick="applyKeepModeAllGroups()">Apply Keep Rule</button>
+            <button class="btn btn-ghost btn-sm" onclick="bulkSelectFilteredDuplicates()">Select Filtered</button>
+            <button class="btn btn-ghost btn-sm" onclick="bulkClearFilteredDuplicates()">Clear Filtered</button>
+          </div>
+        </div>
+        <div id="clutter-toolbar-meta" class="clutter-toolbar-meta"></div>
+      </div>
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-title">Scanned Files</div>
+          <div id="clutter-stat-files" style="font-size:34px;font-weight:800;line-height:1.1">—</div>
+          <div id="clutter-stat-bytes" style="font-size:12px;color:var(--muted);margin-top:6px">No scan yet</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Duplicate Groups</div>
+          <div id="clutter-stat-groups" style="font-size:34px;font-weight:800;line-height:1.1">—</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:6px">Exact file-content matches</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Reclaimable Space</div>
+          <div id="clutter-stat-reclaim" style="font-size:34px;font-weight:800;line-height:1.1;color:var(--success)">—</div>
+          <div id="clutter-stat-time" style="font-size:12px;color:var(--muted);margin-top:6px">Ready to scan</div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Duplicate Groups</div>
+          <div id="clutter-groups"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Group Details</div>
+          <div id="clutter-detail"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLOUD -->
+    <div class="page" id="page-cloud">
+      <div class="page-header">
+        <div><div class="page-title">Cloud Trim</div><div class="page-sub">Analyze local sync data and remove stale cache files safely</div></div>
+        <div class="header-actions">
+          <label for="cloud-stale-days" style="font-size:11px;color:var(--muted)">Stale age</label>
+          <select id="cloud-stale-days" onchange="setCloudStaleDays(this.value)" style="background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-size:12px;outline:none">
+            <option value="14">14 days</option>
+            <option value="21" selected>21 days</option>
+            <option value="30">30 days</option>
+            <option value="45">45 days</option>
+            <option value="60">60 days</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" id="cloud-scan-btn" onclick="loadCloud(true)">↻ Scan</button>
+        </div>
+      </div>
+      <div id="cloud-notice"></div>
+      <div class="grid-4">
+        <div class="card"><div class="card-title">Providers Detected</div><div id="cloud-stat-providers" style="font-size:34px;font-weight:800;line-height:1.1">—</div><div id="cloud-stat-providers-sub" style="font-size:12px;color:var(--muted);margin-top:6px">No scan yet</div></div>
+        <div class="card"><div class="card-title">Synced Data</div><div id="cloud-stat-sync" style="font-size:34px;font-weight:800;line-height:1.1;color:var(--accent3)">—</div><div style="font-size:12px;color:var(--muted);margin-top:6px">Cloud folder sizes</div></div>
+        <div class="card"><div class="card-title">Local Cache</div><div id="cloud-stat-cache" style="font-size:34px;font-weight:800;line-height:1.1;color:var(--warn)">—</div><div style="font-size:12px;color:var(--muted);margin-top:6px">Cache currently stored</div></div>
+        <div class="card"><div class="card-title">Stale Candidates</div><div id="cloud-stat-stale" style="font-size:34px;font-weight:800;line-height:1.1;color:var(--success)">—</div><div id="cloud-stat-stale-sub" style="font-size:12px;color:var(--muted);margin-top:6px">Not scanned</div></div>
+      </div>
+      <div class="card cloud-hero">
+        <div>
+          <div class="cloud-hero-title">Safe cache cleanup only</div>
+          <div class="cloud-hero-copy">LumaSweep scans provider cache paths, selects older stale files, and moves them to Trash. Your synced files remain untouched.</div>
+          <div id="cloud-hero-meta" class="cloud-hero-meta">Choose stale age and run a scan.</div>
+        </div>
+        <button class="btn btn-primary" id="cloud-clean-all-btn" onclick="cleanAllCloudCaches()">🧹 Clean All Stale Cache</button>
+      </div>
+      <div class="card"><div class="card-title">Provider Status</div><div id="cloud-providers"></div></div>
+    </div>
+
+    <!-- SPACE LENS -->
+    <div class="page" id="page-lens">
+      <div class="page-header">
+        <div><div class="page-title">Space Atlas</div><div class="page-sub">Interactive storage map for top folders and large files</div></div>
+        <div class="header-actions">
+          <button class="btn btn-ghost btn-sm" onclick="lensGoHome()">Home</button>
+          <button class="btn btn-ghost btn-sm" onclick="lensGoUp()" id="lens-up-btn">Up</button>
+          <button class="btn btn-primary" onclick="loadLens(lensState.path||null)">↻ Rescan</button>
+        </div>
+      </div>
+      <div id="lens-notice"></div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Storage Sources</div>
+          <div class="lens-toolbar">
+            <div class="lens-control">
+              <label for="lens-filter-type">Type Filter</label>
+              <select id="lens-filter-type" onchange="setLensFilterType(this.value)">
+                <option value="all" selected>All</option>
+                <option value="directory">Folders</option>
+                <option value="file">Files</option>
+              </select>
+            </div>
+            <div class="lens-control" style="min-width:220px;flex:1">
+              <label for="lens-search">Search</label>
+              <input id="lens-search" type="search" placeholder="Filter by name or path" oninput="setLensSearch(this.value)">
+            </div>
+            <div class="lens-toolbar-actions">
+              <button class="btn btn-ghost btn-sm" id="lens-select-visible-btn" onclick="lensSelectVisible()">Select Visible</button>
+              <button class="btn btn-ghost btn-sm" id="lens-clear-selected-btn" onclick="lensClearSelection()">Clear</button>
+              <button class="btn btn-danger btn-sm" id="lens-trash-btn" onclick="trashSelectedLensItems()">🗑️ Trash Selected</button>
+            </div>
+          </div>
+          <div id="lens-toolbar-meta" class="lens-toolbar-meta"></div>
+          <div id="lens-sources"></div>
+        </div>
+        <div class="card"><div class="card-title">Visual Treemap</div><div id="lens-map"></div></div>
+      </div>
     </div>
 
   </div>
@@ -284,7 +817,19 @@ console.log('API ready:', bridge.arch);
 console.log('✅ API bridge loaded, arch:', bridge.arch);
 
 // ── Nav ───────────────────────────────────────────────────────────────────────
-const loaders = {dashboard:loadDashboard,cpu:loadCPU,ram:loadRAM,disk:loadDisk,uninstall:loadApps,startup:loadStartup,privacy:buildPrivacy};
+const loaders = {
+  'smart-care': loadSmartCare,
+  dashboard: loadDashboard,
+  cpu: loadCPU,
+  ram: loadRAM,
+  disk: loadDisk,
+  uninstall: loadApps,
+  startup: loadStartup,
+  privacy: loadProtection,
+  clutter: loadClutter,
+  cloud: loadCloud,
+  lens: loadLens,
+};
 function nav(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -325,9 +870,142 @@ function notice(elId,type,icon,title,sub){
   el.innerHTML='<div class="notice '+type+'"><div style="font-size:22px;flex-shrink:0">'+icon+'</div><div><div style="font-size:14px;font-weight:600;color:'+c+'">'+title+'</div>'+(sub?'<div style="font-size:12px;color:var(--muted);margin-top:2px">'+sub+'</div>':'')+'</div><button class="btn btn-ghost btn-sm" style="margin-left:auto;padding:4px 8px" onclick="this.closest(\'.notice\').remove()">✕</button></div>';
 }
 
+var smartAppCountCache = null;
+var smartAppCountFetchedAt = 0;
+var clutterScan = {
+  groups: [],
+  scannedFiles: 0,
+  scannedBytes: 0,
+  reclaimableBytes: 0,
+  durationMs: 0,
+  roots: [],
+  selectedGroup: 0,
+  inProgress: false,
+};
+var clutterView = {
+  scanProfile: 'balanced',
+  keepMode: 'newest',
+  filterType: 'all',
+  search: '',
+};
+var clutterVisibleGroupIndexes = [];
+var lensState = {
+  path: null,
+  parentPath: null,
+  breadcrumbs: [],
+  totalBytes: 0,
+  totalStr: '0 B',
+  listedStr: '0 B',
+  items: [],
+  selectedPaths: new Set(),
+  filterType: 'all',
+  search: '',
+  cleaning: false,
+  loading: false,
+};
+var protectionReport = {
+  score: null,
+  status: 'Not scanned',
+  counts: { critical: 0, warning: 0, info: 0, new: 0 },
+  findings: [],
+  scannedAt: null,
+  baselinePreviousAt: null,
+};
+var protectionFindingsById = {};
+var cloudState = {
+  loading: false,
+  staleDays: 21,
+  maxFiles: 1200,
+  cleaningProvider: null,
+  cleaningAll: false,
+  summary: {
+    providersDetected: 0,
+    syncBytes: 0,
+    cacheBytes: 0,
+    staleBytes: 0,
+    staleCount: 0,
+    scannedAt: null,
+  },
+  providers: [],
+};
+
+function estimateHealthScore(info){
+  var r=info.ram,d=info.disk,c=info.cpu,pressure=r.pressure||{level:'normal'};
+  var score=100;
+  score-=Math.round(r.usedPct*0.32);
+  score-=Math.round(c.pct*0.24);
+  score-=Math.max(0,d.pct-65);
+  if(pressure.level==='warning') score-=8;
+  if(pressure.level==='critical') score-=18;
+  return Math.max(28,Math.min(99,score));
+}
+function healthColor(score){
+  return score>=80?'var(--success)':score>=62?'var(--warn)':'var(--danger)';
+}
+function healthLabel(score){
+  return score>=85?'Excellent':score>=72?'Good':score>=62?'Fair':'Needs Attention';
+}
+function activeNoticeTarget(){
+  var active=document.querySelector('.page.active');
+  if(!active) return 'dash-notice';
+  if(active.id==='page-smart-care') return 'smart-notice';
+  if(active.id==='page-dashboard') return 'dash-notice';
+  if(active.id==='page-ram') return 'ram-notice';
+  if(active.id==='page-cpu') return 'cpu-notice';
+  if(active.id==='page-disk') return 'disk-notice';
+  if(active.id==='page-uninstall') return 'uninstall-notice';
+  if(active.id==='page-privacy') return 'privacy-notice';
+  if(active.id==='page-clutter') return 'clutter-notice';
+  if(active.id==='page-cloud') return 'cloud-notice';
+  if(active.id==='page-lens') return 'lens-notice';
+  return 'dash-notice';
+}
+function refreshScanButtons(isBusy){
+  [['scan-btn','⟳ Health Scan'],['smart-scan-btn','⟳ Run Pulse Hub']].forEach(function(pair){
+    var btn=document.getElementById(pair[0]);
+    if(!btn) return;
+    btn.disabled=!!isBusy;
+    btn.innerHTML=isBusy?'<span class="spin">⟳</span> Scanning…':pair[1];
+  });
+}
+async function warmSmartAppsCount(force){
+  var now=Date.now();
+  if(!force && smartAppCountCache!==null && (now-smartAppCountFetchedAt)<300000) return;
+  try{
+    var apps=await bridge.listApps();
+    smartAppCountCache=apps.length;
+    smartAppCountFetchedAt=now;
+  }catch{}
+}
+async function loadSmartCare(){
+  try{
+    var info=await bridge.getSystemInfo();
+    var r=info.ram,d=info.disk,c=info.cpu,pressure=r.pressure||{level:'normal'};
+    var score=estimateHealthScore(info),scoreColor=healthColor(score),pendingPrivacy=privItems.length-privCleared.size;
+    var threatCount=(protectionReport.counts&&typeof protectionReport.counts==='object')
+      ? ((protectionReport.counts.critical||0)+(protectionReport.counts.warning||0))
+      : 0;
+    document.getElementById('smart-sub').textContent=info.hostname+' · macOS · '+bridge.arch+' · '+refreshLabel(refreshProfile);
+    var orb=document.getElementById('smart-orb');
+    if(orb){
+      orb.querySelector('.smart-orb-value').textContent=score+'%';
+      orb.querySelector('.smart-orb-value').style.color=scoreColor;
+      orb.querySelector('.smart-orb-meta').textContent=healthLabel(score)+' · RAM pressure '+pL(pressure.level);
+    }
+    document.getElementById('care-cleanup').textContent=d.pct+'%';
+    document.getElementById('care-protection').textContent=threatCount>0?threatCount:pendingPrivacy;
+    document.getElementById('care-performance').textContent=Math.max(c.pct,r.usedPct)+'%';
+    document.getElementById('care-apps').textContent=smartAppCountCache===null?'Indexing…':smartAppCountCache+' apps';
+    document.getElementById('care-clutter').textContent=clutterScan.groups.length?clutterScan.groups.length+' groups':(clutterScan.inProgress?'Scanning…':'Scan Ready');
+    warmSmartAppsCount(false).then(function(){
+      var appsEl=document.getElementById('care-apps');
+      if(appsEl&&smartAppCountCache!==null) appsEl.textContent=smartAppCountCache+' apps';
+    });
+  }catch(e){notice('smart-notice','error','⚠️','Could not load Pulse Hub',e.message);}
+}
+
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 async function loadDashboard(){
-  console.log('loadDashboard called');
   try{
     var info=await bridge.getSystemInfo();
     document.getElementById('dash-sub').textContent=info.hostname+' · macOS · '+bridge.arch;
@@ -358,11 +1036,12 @@ function statCard(title,val,sub,color){
 var scanning=false;
 async function runScan(){
   if(scanning)return;scanning=true;
-  var btn=document.getElementById('scan-btn');
-  btn.disabled=true;btn.innerHTML='<span class="spin">⟳</span> Scanning…';
-  await loadDashboard();
-  await new Promise(r=>setTimeout(r,1200));
-  btn.disabled=false;btn.innerHTML='⟳ Smart Scan';scanning=false;
+  refreshScanButtons(true);
+  await Promise.all([loadSmartCare(),loadDashboard()]);
+  await new Promise(r=>setTimeout(r,900));
+  refreshScanButtons(false);
+  scanning=false;
+  notice('smart-notice','success','✅','Pulse Hub complete','Health score and performance modules are refreshed.');
   notice('dash-notice','success','✅','Scan complete','Your Mac has been analyzed. Use the tools in the sidebar to clean and optimize.');
 }
 
@@ -437,6 +1116,8 @@ async function freeRAM(){
     var pressureText=(res.beforePressure&&res.stabilizedPressure)?('Pressure: '+pL(res.beforePressure.level)+' → '+pL(res.stabilizedPressure.level)):'';
     notice('ram-notice','success','✅','RAM cleanup complete','Immediate: '+fmt(immediate)+' · Stabilized (~12s): '+fmt(stabilized)+(pressureText?' · '+pressureText:''));
     loadRAM();
+    loadSmartCare();
+    loadDashboard();
   }
   else notice('ram-notice','error','⚠️','Could not free RAM',res.error||'Try running with admin privileges.');
 }
@@ -452,6 +1133,7 @@ async function quitRamProcess(pid){
   }
   notice('ram-notice','success','✅','Process closed','Refreshing memory stats...');
   loadRAM();
+  loadSmartCare();
   loadDashboard();
 }
 
@@ -479,6 +1161,7 @@ async function deepCleanRAM(){
   var pressureText=(res.beforePressure&&res.stabilizedPressure)?('Pressure: '+pL(res.beforePressure.level)+' → '+pL(res.stabilizedPressure.level)):'';
   notice('ram-notice','success','✅','Deep RAM clean complete','Immediate: '+fmt(immediate)+' · Stabilized (~12s): '+fmt(stabilized)+' · Quit '+quitCount+' app'+(quitCount===1?'':'s')+(pressureText?' · '+pressureText:''));
   loadRAM();
+  loadSmartCare();
   loadDashboard();
 }
 
@@ -527,19 +1210,112 @@ async function cleanDisk(id){
     document.getElementById('disk-cleaned-amt').textContent=fmt(diskCleaned);
     renderDisk();updateDiskStats();
     notice('disk-notice','success','✨',fmt(diskCleaned)+' freed so far!');
+    loadSmartCare();
+    loadDashboard();
   }else if(btn){btn.disabled=false;btn.innerHTML='🗑️ Clean';}
 }
 
 // ── Apps ──────────────────────────────────────────────────────────────────────
 var appList=[];
+var selectedAppPaths=new Set();
+var appsSearch='';
+var appsOnlyLeftovers=false;
+var appsBatchBusy=false;
 var appColors=['#5b8af5','#a855f7','#22d3b8','#f97316','#22c55e','#eab308','#ef4444','#06b6d4'];
 var appIcons={game:'🎮',music:'🎵',productivity:'💼',design:'🎨',video:'📹',browser:'🌐',developer:'⚙️',utilities:'🔧',social:'💬',education:'📚'};
+function appSafeId(app){
+  var src=String((app&&app.path)||'');
+  var hash=2166136261;
+  for(var i=0;i<src.length;i++){
+    hash^=src.charCodeAt(i);
+    hash+=(hash<<1)+(hash<<4)+(hash<<7)+(hash<<8)+(hash<<24);
+  }
+  return 'a'+((hash>>>0).toString(36))+'_'+src.length;
+}
+function appMatchesFilters(app){
+  if(appsOnlyLeftovers && !(app.leftover>0)) return false;
+  if(!appsSearch) return true;
+  var q=appsSearch.toLowerCase();
+  var hay=[app.name,app.bundleName,app.bundleId,app.category].filter(Boolean).join(' ').toLowerCase();
+  return hay.indexOf(q)>=0;
+}
+function filteredApps(){
+  return appList.filter(appMatchesFilters);
+}
+function setAppSearch(value){
+  appsSearch=String(value||'').trim();
+  renderApps();
+}
+function setAppsOnlyLeftovers(flag){
+  appsOnlyLeftovers=!!flag;
+  renderApps();
+}
+function clearAppSelection(){
+  selectedAppPaths.clear();
+  renderApps();
+}
+function toggleAppSelectionByPath(appPath,isChecked){
+  var key=String(appPath||'');
+  if(!key) return;
+  if(isChecked) selectedAppPaths.add(key);
+  else selectedAppPaths.delete(key);
+  renderApps();
+}
+function selectedApps(){
+  return appList.filter(function(app){ return selectedAppPaths.has(app.path); });
+}
+function selectAppsWithLeftovers(){
+  var list=filteredApps().filter(function(app){ return app.leftover>0; });
+  if(!list.length){
+    notice('uninstall-notice','info','ℹ️','Nothing to select','No visible apps with leftovers.');
+    return;
+  }
+  list.forEach(function(app){ selectedAppPaths.add(app.path); });
+  renderApps();
+  notice('uninstall-notice','success','✅','Selection updated','Selected '+list.length+' app'+(list.length===1?'':'s')+' with leftovers.');
+}
+function renderAppsMeta(view){
+  var selected=selectedApps();
+  var selectedLeftoverBytes=selected.reduce(function(acc,app){ return acc+(app.leftover||0); },0);
+  var selectedLeftoverApps=selected.filter(function(app){ return app.leftover>0; }).length;
+  var meta=document.getElementById('apps-meta');
+  if(meta){
+    meta.innerHTML=
+      '<span class="apps-chip">Visible: '+view.length+' / '+appList.length+'</span>'+
+      '<span class="apps-chip">Selected: '+selected.length+'</span>'+
+      '<span class="apps-chip">Selected leftovers: '+selectedLeftoverApps+' apps · '+fmt(selectedLeftoverBytes)+'</span>'+
+      (appsOnlyLeftovers?'<span class="apps-chip">Filter: leftovers only</span>':'');
+  }
+}
+function updateAppsBatchButtons(){
+  var selected=selectedApps();
+  var canClean=selected.some(function(app){ return app.leftover>0; });
+  var cleanBtn=document.getElementById('apps-batch-clean-btn');
+  var uninstallBtn=document.getElementById('apps-batch-uninstall-btn');
+  if(cleanBtn){
+    cleanBtn.disabled=appsBatchBusy||!canClean;
+    cleanBtn.innerHTML=appsBatchBusy?'<span class="spin">⟳</span> Working…':'🧹 Clean Leftovers';
+  }
+  if(uninstallBtn){
+    uninstallBtn.disabled=appsBatchBusy||selected.length===0;
+    uninstallBtn.innerHTML=appsBatchBusy?'<span class="spin">⟳</span> Working…':'🗑️ Uninstall Selected';
+  }
+}
 async function loadApps(){
   document.getElementById('app-list').innerHTML='<div class="skel" style="height:280px;border-radius:8px"></div>';
   document.getElementById('uninstall-notice').innerHTML='';
   try{
     appList=await bridge.listApps();
+    selectedAppPaths=new Set(Array.from(selectedAppPaths).filter(function(p){
+      return appList.some(function(app){ return app.path===p; });
+    }));
+    smartAppCountCache=appList.length;
+    smartAppCountFetchedAt=Date.now();
     document.getElementById('app-count').textContent=appList.length+' apps found';
+    var searchEl=document.getElementById('apps-search');
+    if(searchEl && searchEl.value!==appsSearch) searchEl.value=appsSearch;
+    var leftoversEl=document.getElementById('apps-only-leftovers');
+    if(leftoversEl) leftoversEl.checked=appsOnlyLeftovers;
     renderApps();
   }catch(e){
     notice('uninstall-notice','error','⚠️','Failed to list applications',e.message);
@@ -548,38 +1324,144 @@ async function loadApps(){
   }
 }
 function renderApps(){
-  document.getElementById('app-list').innerHTML=appList.length?
-    appList.map(function(app){
+  var view=filteredApps();
+  renderAppsMeta(view);
+  updateAppsBatchButtons();
+  document.getElementById('app-list').innerHTML=view.length?
+    view.map(function(app){
       var c=appColors[app.name.charCodeAt(0)%appColors.length];
       var icon=appIcons[(app.category||'').toLowerCase()]||'📦';
-      var safeId=app.id.replace(/[^a-zA-Z0-9_-]/g,'_');
+      var safeId=appSafeId(app);
       var safePath=app.path.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-      return '<div class="app-row" id="arow-'+safeId+'">'+
+      var isSelected=selectedAppPaths.has(app.path);
+      return '<div class="app-row '+(isSelected?'selected':'')+'" id="arow-'+safeId+'">'+
+        '<input class="app-check" type="checkbox" '+(isSelected?'checked':'')+' onchange="toggleAppSelectionByPath(\''+safePath+'\',this.checked)" '+(appsBatchBusy?'disabled':'')+'>'+
         '<div class="app-icon" style="background:'+c+'20">'+icon+'</div>'+
         '<div class="app-info"><div class="app-name">'+app.name+'</div>'+
         '<div class="app-meta"><span>'+app.sizeStr+'</span>'+
-        (app.leftover>0?'<span class="tag" style="background:rgba(239,68,68,0.1);color:var(--danger)">+'+app.leftoverStr+' leftovers</span>':'')+
+        (app.bundleId?'<span class="tag" style="background:rgba(91,138,245,0.12);color:var(--accent3)">'+escHtml(app.bundleId)+'</span>':'')+
+        (app.leftover>0?'<span class="tag" style="background:rgba(239,68,68,0.1);color:var(--danger)">+'+app.leftoverStr+' · '+(app.leftoverPathCount||0)+' items</span>':'<span class="tag" style="background:rgba(34,197,94,0.12);color:var(--success)">No leftovers found</span>')+
         '</div></div>'+
-        '<button class="btn btn-ghost btn-sm" onclick="window.api.openInFinder(\''+safePath+'\')">📂</button>'+
-        '<button class="btn btn-danger btn-sm" id="ubtn-'+safeId+'" onclick="doUninstall(\''+safeId+'\',\''+safePath+'\')">🗑️ Uninstall</button>'+
+        '<button class="btn btn-ghost btn-sm" onclick="window.api.openInFinder(\''+safePath+'\')" '+(appsBatchBusy?'disabled':'')+'>📂</button>'+
+        '<button class="btn btn-ghost btn-sm" id="cbtn-'+safeId+'" onclick="cleanAppLeftovers(\''+safeId+'\',false,false)" '+((app.leftover>0&&!appsBatchBusy)?'':'disabled')+'>🧹 Leftovers</button>'+
+        '<button class="btn btn-danger btn-sm" id="ubtn-'+safeId+'" onclick="doUninstall(\''+safeId+'\',\''+safePath+'\',false,false)" '+(appsBatchBusy?'disabled':'')+'>🗑️ Uninstall</button>'+
         '</div>';
     }).join(''):
-    '<div class="empty"><span style="font-size:36px;display:block;margin-bottom:8px">📦</span>No applications found</div>';
+    '<div class="empty"><span style="font-size:36px;display:block;margin-bottom:8px">📦</span>No applications match current filters</div>';
 }
-async function doUninstall(safeId,appPath){
+async function doUninstall(safeId,appPath,skipConfirm,isBatch){
   var btn=document.getElementById('ubtn-'+safeId);
-  if(btn){btn.disabled=true;btn.innerHTML='<span class="spin">⟳</span>';}
-  var app=appList.find(function(a){return a.id.replace(/[^a-zA-Z0-9_-]/g,'_')===safeId;});
-  var res=await bridge.uninstallApp({appPath:appPath,leftoverPaths:app?app.leftoverPaths:[]});
-  if(res.cancelled){if(btn){btn.disabled=false;btn.innerHTML='🗑️ Uninstall';}return;}
+  if(btn && !isBatch){btn.disabled=true;btn.innerHTML='<span class="spin">⟳</span>';}
+  var app=appList.find(function(a){return appSafeId(a)===safeId;})||appList.find(function(a){return a.path===appPath;});
+  var res=await bridge.uninstallApp({
+    appPath:appPath,
+    leftoverPaths:app?app.leftoverPaths:[],
+    skipConfirm:!!skipConfirm,
+  });
+  if(res.cancelled){if(btn && !isBatch){btn.disabled=false;btn.innerHTML='🗑️ Uninstall';}return res;}
   if(res.success){
-    var row=document.getElementById('arow-'+safeId);if(row)row.remove();
-    appList=appList.filter(function(a){return a.id.replace(/[^a-zA-Z0-9_-]/g,'_')!==safeId;});
+    appList=appList.filter(function(a){return a.path!==appPath;});
+    selectedAppPaths.delete(appPath);
+    smartAppCountCache=appList.length;
+    smartAppCountFetchedAt=Date.now();
     document.getElementById('app-count').textContent=appList.length+' apps found';
-    notice('uninstall-notice','success','✅','App uninstalled and moved to Trash.');
+    renderApps();
+    if(!isBatch){
+      var cleaned=res.cleanedLeftoverCount||0;
+      notice('uninstall-notice','success','✅','App uninstalled','Moved app to Trash'+(cleaned?(' and cleaned '+cleaned+' leftover item'+(cleaned===1?'':'s')+'.'):'.'));
+    }
   }else{
-    if(btn){btn.disabled=false;btn.innerHTML='🗑️ Uninstall';}
-    notice('uninstall-notice','error','⚠️','Uninstall failed',res.error||'Unknown error');
+    if(btn && !isBatch){btn.disabled=false;btn.innerHTML='🗑️ Uninstall';}
+    if(!isBatch) notice('uninstall-notice','error','⚠️','Uninstall failed',res.error||'Unknown error');
+  }
+  return res;
+}
+async function cleanAppLeftovers(safeId,skipConfirm,isBatch){
+  var app=appList.find(function(a){return appSafeId(a)===safeId;});
+  if(!app || !(app.leftover>0)) return { success: true, cleanedCount: 0 };
+  var btn=document.getElementById('cbtn-'+safeId);
+  if(btn && !isBatch){btn.disabled=true;btn.innerHTML='<span class="spin">⟳</span>';}
+  var res=await bridge.cleanAppLeftovers({
+    appName: app.name,
+    leftoverPaths: app.leftoverPaths||[],
+    skipConfirm: !!skipConfirm,
+  });
+  if(res&&res.cancelled){
+    if(btn && !isBatch){btn.disabled=false;btn.innerHTML='🧹 Leftovers';}
+    return res;
+  }
+  if(res&&res.success){
+    app.leftover=0;
+    app.leftoverStr='0 B';
+    app.leftoverPathCount=0;
+    app.leftoverPaths=[];
+    renderApps();
+    if(!isBatch){
+      notice('uninstall-notice','success','🧹','Leftovers cleaned',app.name+': '+(res.cleanedCount||0)+' item'+((res.cleanedCount||0)===1?'':'s')+' moved to Trash ('+fmt(res.cleanedBytes||0)+').');
+    }
+  }else{
+    if(btn && !isBatch){btn.disabled=false;btn.innerHTML='🧹 Leftovers';}
+    if(!isBatch) notice('uninstall-notice','error','⚠️','Leftover cleanup failed',res&&res.error?res.error:'Unknown error');
+  }
+  return res;
+}
+async function batchCleanLeftovers(){
+  if(appsBatchBusy) return;
+  var targets=selectedApps().filter(function(app){return app.leftover>0;});
+  if(!targets.length){
+    notice('uninstall-notice','info','ℹ️','Nothing selected','Select apps that have leftovers first.');
+    return;
+  }
+  if(!window.confirm('Clean leftovers for '+targets.length+' selected app'+(targets.length===1?'':'s')+'?')) return;
+  appsBatchBusy=true;
+  renderApps();
+  var cleanedApps=0,cleanedItems=0,cleanedBytes=0,failed=0;
+  for(var i=0;i<targets.length;i++){
+    var app=targets[i];
+    var res=await cleanAppLeftovers(appSafeId(app),true,true);
+    if(res&&res.success){
+      cleanedApps+=1;
+      cleanedItems+=(res.cleanedCount||0);
+      cleanedBytes+=(res.cleanedBytes||0);
+    }else if(!(res&&res.cancelled)){
+      failed+=1;
+    }
+  }
+  appsBatchBusy=false;
+  renderApps();
+  if(failed){
+    notice('uninstall-notice','error','⚠️','Batch cleanup finished with warnings','Cleaned '+cleanedApps+' app'+(cleanedApps===1?'':'s')+', '+failed+' failed.');
+  }else{
+    notice('uninstall-notice','success','✅','Batch leftovers cleanup complete','Cleaned '+cleanedApps+' app'+(cleanedApps===1?'':'s')+' · '+cleanedItems+' item'+(cleanedItems===1?'':'s')+' · '+fmt(cleanedBytes)+'.');
+  }
+}
+async function batchUninstallSelected(){
+  if(appsBatchBusy) return;
+  var targets=selectedApps();
+  if(!targets.length){
+    notice('uninstall-notice','info','ℹ️','Nothing selected','Select one or more apps first.');
+    return;
+  }
+  if(!window.confirm('Uninstall '+targets.length+' selected app'+(targets.length===1?'':'s')+' and cleanup detected leftovers?')) return;
+  appsBatchBusy=true;
+  renderApps();
+  var ok=0,failed=0,leftoverItems=0;
+  for(var i=0;i<targets.length;i++){
+    var app=targets[i];
+    var res=await doUninstall(appSafeId(app),app.path,true,true);
+    if(res&&res.success){
+      ok+=1;
+      leftoverItems+=(res.cleanedLeftoverCount||0);
+    }else if(!(res&&res.cancelled)){
+      failed+=1;
+    }
+  }
+  appsBatchBusy=false;
+  renderApps();
+  if(failed){
+    notice('uninstall-notice','error','⚠️','Batch uninstall finished with warnings',ok+' app'+(ok===1?'':'s')+' removed, '+failed+' failed.');
+  }else{
+    notice('uninstall-notice','success','✅','Batch uninstall complete',ok+' app'+(ok===1?'':'s')+' removed · '+leftoverItems+' leftover item'+(leftoverItems===1?'':'s')+' cleaned.');
   }
 }
 
@@ -591,7 +1473,7 @@ async function loadStartup(){
     startupItems=await bridge.getStartupItems();
     renderStartup();
   }catch(e){
-    notice('dash-notice','error','⚠️','Failed to load startup items',e.message);
+    notice('startup-notice','error','⚠️','Failed to load startup items',e.message);
     document.getElementById('startup-list').innerHTML='<div class="empty"><span style="font-size:36px;display:block;margin-bottom:8px">⚠️</span>Could not load startup items</div>';
     document.getElementById('startup-active').textContent='—';
     document.getElementById('startup-high').textContent='—';
@@ -624,7 +1506,7 @@ async function toggleItem(safeId){
   if(res.success){item.enabled=!item.enabled;renderStartup();}
 }
 
-// ── Privacy ───────────────────────────────────────────────────────────────────
+// ── Protection / Privacy ──────────────────────────────────────────────────────
 var privItems=[
   {id:'browser_history',name:'Browser History',icon:'🌐',desc:'Safari & Chrome browsing history',risk:'High'},
   {id:'recent_files',name:'Recent Files',icon:'📄',desc:'Recently opened documents list',risk:'Medium'},
@@ -637,6 +1519,96 @@ var privItems=[
 ];
 var privCleared=new Set();
 function riskColor(r){return r==='High'?'var(--danger)':r==='Medium'?'var(--warn)':'var(--success)';}
+function protectionColor(level){return level==='critical'?'var(--danger)':level==='warning'?'var(--warn)':'var(--accent3)';}
+function protectionIcon(level){return level==='critical'?'🚨':level==='warning'?'⚠️':'ℹ️';}
+function renderProtectionSummary(){
+  var scoreEl=document.getElementById('protection-score');
+  var statusEl=document.getElementById('protection-status');
+  var criticalEl=document.getElementById('protection-critical');
+  var warningEl=document.getElementById('protection-warning');
+  var newEl=document.getElementById('protection-new');
+  var lastEl=document.getElementById('protection-last');
+  if(scoreEl) scoreEl.textContent=protectionReport.score===null?'—':protectionReport.score+'%';
+  if(scoreEl&&protectionReport.score!==null) scoreEl.style.color=protectionReport.score>=85?'var(--success)':protectionReport.score>=70?'var(--warn)':'var(--danger)';
+  if(statusEl) statusEl.textContent=(protectionReport.status||'Not scanned')+(protectionReport.scannedAt?' · '+fmtTime(protectionReport.scannedAt):'');
+  if(criticalEl) criticalEl.textContent=(protectionReport.counts&&protectionReport.counts.critical!==undefined)?protectionReport.counts.critical:'—';
+  if(warningEl) warningEl.textContent=(protectionReport.counts&&protectionReport.counts.warning!==undefined)?protectionReport.counts.warning:'—';
+  if(newEl) newEl.textContent=(protectionReport.counts&&protectionReport.counts.new!==undefined)?protectionReport.counts.new:'—';
+  if(lastEl) lastEl.textContent=protectionReport.baselinePreviousAt?('Previous baseline: '+fmtTime(protectionReport.baselinePreviousAt)):'First baseline will be created after scan';
+}
+function renderProtectionFindings(){
+  var el=document.getElementById('protection-findings');
+  if(!el) return;
+  protectionFindingsById={};
+  var findings=Array.isArray(protectionReport.findings)?protectionReport.findings:[];
+  if(!findings.length){
+    el.innerHTML='<div class="empty"><span style="font-size:34px;display:block;margin-bottom:8px">✅</span>No active threats detected in this scan.</div>';
+    return;
+  }
+  el.innerHTML=findings.map(function(f){
+    protectionFindingsById[f.id]=f;
+    var sevColor=protectionColor(f.severity);
+    var actions=[];
+    if(Array.isArray(f.actions)){
+      if(f.actions.includes('disable-startup')) actions.push('<button class="btn btn-ghost btn-sm" onclick="runProtectionAction(\'disable-startup\',\''+escJs(f.id)+'\')">Disable</button>');
+      if(f.actions.includes('disable-launch-agent')) actions.push('<button class="btn btn-ghost btn-sm" onclick="runProtectionAction(\'disable-launch-agent\',\''+escJs(f.id)+'\')">Disable</button>');
+      if(f.actions.includes('reveal-path')) actions.push('<button class="btn btn-ghost btn-sm" onclick="runProtectionAction(\'reveal-path\',\''+escJs(f.id)+'\')">Reveal</button>');
+      if(f.actions.includes('trash-path')) actions.push('<button class="btn btn-danger btn-sm" onclick="runProtectionAction(\'trash-path\',\''+escJs(f.id)+'\')">Move to Trash</button>');
+    }
+    return '<div class="app-row">'+
+      '<div class="app-icon" style="background:'+sevColor+'22">'+protectionIcon(f.severity)+'</div>'+
+      '<div class="app-info"><div class="app-name">'+escHtml(f.title||'Unknown finding')+'</div>'+
+      '<div class="app-meta">'+escHtml(f.description||'')+
+      ' <span class="tag" style="background:'+sevColor+'22;color:'+sevColor+'">'+escHtml((f.severity||'info').toUpperCase())+'</span>'+
+      (f.isNew?'<span class="tag" style="background:rgba(60,198,255,0.18);color:var(--accent3)">NEW</span>':'')+
+      (f.path?'<span class="monospace" style="font-size:10px">'+escHtml(f.path)+'</span>':'')+
+      '</div></div>'+
+      '<div style="display:flex;gap:6px;flex-wrap:wrap">'+actions.join('')+'</div>'+
+      '</div>';
+  }).join('');
+}
+async function loadProtection(force){
+  var findingsEl=document.getElementById('protection-findings');
+  if(findingsEl) findingsEl.innerHTML='<div class="skel" style="height:220px;border-radius:10px"></div>';
+  try{
+    var res=await bridge.getProtectionReport({force:!!force});
+    if(!res||!res.success){
+      notice('privacy-notice','error','⚠️','Protection scan failed',res&&res.error?res.error:'Unknown error');
+      buildPrivacy();
+      return;
+    }
+    protectionReport={
+      score:res.score,
+      status:res.status,
+      counts:res.counts||{critical:0,warning:0,info:0,new:0},
+      findings:res.findings||[],
+      scannedAt:res.scannedAt||null,
+      baselinePreviousAt:res.baselinePreviousAt||null,
+    };
+    renderProtectionSummary();
+    renderProtectionFindings();
+    buildPrivacy();
+    loadSmartCare();
+  }catch(e){
+    notice('privacy-notice','error','⚠️','Protection scan failed',e.message);
+    buildPrivacy();
+  }
+}
+async function runProtectionAction(action,id){
+  var finding=protectionFindingsById[id];
+  if(!finding){
+    notice('privacy-notice','error','⚠️','Action failed','Finding could not be resolved.');
+    return;
+  }
+  var res=await bridge.runProtectionAction({action:action,finding:finding});
+  if(res&&res.cancelled) return;
+  if(res&&res.success){
+    notice('privacy-notice','success','✅','Action completed','Protection state has been refreshed.');
+    await loadProtection(true);
+  }else{
+    notice('privacy-notice','error','⚠️','Action failed',res&&res.error?res.error:'Unknown error');
+  }
+}
 function buildPrivacy(){
   document.getElementById('privacy-list').innerHTML=privItems.map(function(item){
     var cleared=privCleared.has(item.id);
@@ -654,27 +1626,925 @@ async function clearPrivacy(id){
   var btn=document.getElementById('pbtn-'+id);
   if(btn){btn.disabled=true;btn.innerHTML='<span class="spin">⟳</span>';}
   var res=await bridge.clearPrivacy(id);
-  if(res.success){privCleared.add(id);buildPrivacy();notice('privacy-notice','success','🛡️',privCleared.size+' trace'+(privCleared.size>1?'s':'')+' cleared');}
+  if(res.success){privCleared.add(id);buildPrivacy();notice('privacy-notice','success','🛡️',privCleared.size+' trace'+(privCleared.size>1?'s':'')+' cleared');loadSmartCare();}
   else if(btn){btn.disabled=false;btn.innerHTML='🧹 Clear';}
 }
 async function clearAllPrivacy(){
   for(var i=0;i<privItems.length;i++){
     if(!privCleared.has(privItems[i].id)){await clearPrivacy(privItems[i].id);await new Promise(function(r){setTimeout(r,150);});}
   }
+  loadSmartCare();
+}
+
+function escHtml(v){
+  return String(v==null?'':v)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+function escJs(v){
+  return String(v==null?'':v).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+}
+function fmtTime(ts){
+  if(!ts) return 'Unknown date';
+  var d=new Date(ts);
+  if(Number.isNaN(d.getTime())) return 'Unknown date';
+  return d.toLocaleString();
+}
+function duplicateFileCategory(fileName){
+  var ext=String(fileName||'').toLowerCase();
+  var idx=ext.lastIndexOf('.');
+  ext=idx>=0?ext.slice(idx+1):'';
+  if(['jpg','jpeg','png','gif','webp','heic','heif','tiff','bmp','svg','raw','dng'].includes(ext)) return 'image';
+  if(['mp4','mov','m4v','mkv','avi','webm','wmv','flv'].includes(ext)) return 'video';
+  if(['zip','rar','7z','tar','gz','bz2','xz','iso'].includes(ext)) return 'archive';
+  if(['pdf','doc','docx','ppt','pptx','xls','xlsx','pages','numbers','key','txt','rtf','md'].includes(ext)) return 'document';
+  if(['mp3','wav','aiff','aac','m4a','flac','ogg'].includes(ext)) return 'audio';
+  if(['js','ts','jsx','tsx','json','py','java','go','rs','c','cpp','h','hpp','swift','kt','rb','php','sh','zsh','yml','yaml'].includes(ext)) return 'code';
+  return 'other';
+}
+function duplicateCategoryLabel(category){
+  if(category==='image') return 'Images';
+  if(category==='video') return 'Videos';
+  if(category==='archive') return 'Archives';
+  if(category==='document') return 'Documents';
+  if(category==='audio') return 'Audio';
+  if(category==='code') return 'Code';
+  return 'Other';
+}
+function clutterKeepLabel(mode){
+  if(mode==='oldest') return 'Keep Oldest';
+  if(mode==='shortest-path') return 'Keep Shortest Path';
+  return 'Keep Newest';
+}
+function clutterProfileConfig(profile){
+  if(profile==='quick') return {minSizeBytes:2*1024*1024,maxFiles:2200,maxGroups:140,label:'Quick'};
+  if(profile==='deep') return {minSizeBytes:512*1024,maxFiles:6500,maxGroups:320,label:'Deep'};
+  return {minSizeBytes:1024*1024,maxFiles:3200,maxGroups:200,label:'Balanced'};
+}
+function syncClutterControls(){
+  var profileEl=document.getElementById('clutter-scan-profile');
+  var keepEl=document.getElementById('clutter-keep-mode');
+  var filterEl=document.getElementById('clutter-filter-type');
+  var searchEl=document.getElementById('clutter-search');
+  if(profileEl) profileEl.value=clutterView.scanProfile;
+  if(keepEl) keepEl.value=clutterView.keepMode;
+  if(filterEl) filterEl.value=clutterView.filterType;
+  if(searchEl && searchEl.value!==clutterView.search) searchEl.value=clutterView.search;
+}
+function chooseKeepPath(files,keepMode){
+  if(!Array.isArray(files) || !files.length) return null;
+  if(keepMode==='oldest'){
+    return files.slice().sort(function(a,b){return (a.mtimeMs||0)-(b.mtimeMs||0);})[0].path;
+  }
+  if(keepMode==='shortest-path'){
+    return files.slice().sort(function(a,b){
+      return String(a.path||'').length-String(b.path||'').length;
+    })[0].path;
+  }
+  return files.slice().sort(function(a,b){return (a.mtimeMs||0)-(b.mtimeMs||0);})[files.length-1].path;
+}
+function normalizeDuplicateGroup(group){
+  if(!group || !Array.isArray(group.files) || group.files.length<2) return null;
+  var sorted=group.files.slice().sort(function(a,b){ return (a.mtimeMs||0)-(b.mtimeMs||0); });
+  var keepPath=(group.keepPath&&sorted.some(function(f){return f.path===group.keepPath;}))
+    ? group.keepPath
+    : chooseKeepPath(sorted,clutterView.keepMode);
+  group.files=sorted.map(function(f){
+    var name=f.name||f.path.split('/').pop();
+    return {
+      path:f.path,
+      name:name,
+      dir:f.dir||f.path.replace(/\/[^/]+$/,''),
+      size:Number(f.size)||0,
+      sizeStr:f.sizeStr||fmt(Number(f.size)||0),
+      mtimeMs:Number(f.mtimeMs)||0,
+      modifiedAt:f.modifiedAt||new Date(Number(f.mtimeMs)||0).toISOString(),
+      category:duplicateFileCategory(name),
+      selected:f.path===keepPath?false:!!f.selected,
+    };
+  });
+  group.keepPath=keepPath;
+  group.count=group.files.length;
+  group.reclaimableBytes=group.files.reduce(function(acc,f){ return acc+(f.selected?f.size:0); },0);
+  group.reclaimableStr=fmt(group.reclaimableBytes);
+  return group;
+}
+function applyKeepModeToGroup(group,mode,autoSelect){
+  if(!group || !Array.isArray(group.files) || !group.files.length) return;
+  var keepPath=chooseKeepPath(group.files,mode) || group.keepPath;
+  group.keepPath=keepPath;
+  group.files.forEach(function(file){
+    if(file.path===keepPath){
+      file.selected=false;
+      return;
+    }
+    if(autoSelect) file.selected=true;
+  });
+}
+function groupPrimaryCategory(group){
+  var counts={};
+  (group.files||[]).forEach(function(file){
+    var cat=file.category||duplicateFileCategory(file.name);
+    counts[cat]=(counts[cat]||0)+1;
+  });
+  var best='other';
+  Object.keys(counts).forEach(function(cat){
+    if((counts[cat]||0)>(counts[best]||0)) best=cat;
+  });
+  return best;
+}
+function groupMatchesFilters(group){
+  var typeFilter=clutterView.filterType||'all';
+  var term=String(clutterView.search||'').trim().toLowerCase();
+  if(typeFilter!=='all'){
+    var typeHit=(group.files||[]).some(function(file){
+      return (file.category||duplicateFileCategory(file.name))===typeFilter;
+    });
+    if(!typeHit) return false;
+  }
+  if(term){
+    var textHit=(group.files||[]).some(function(file){
+      return String(file.name||'').toLowerCase().includes(term) || String(file.path||'').toLowerCase().includes(term);
+    });
+    if(!textHit) return false;
+  }
+  return true;
+}
+function recomputeClutterStats(){
+  clutterScan.groups=clutterScan.groups.map(normalizeDuplicateGroup).filter(Boolean);
+  clutterScan.groups.sort(function(a,b){ return (b.reclaimableBytes||0)-(a.reclaimableBytes||0); });
+  clutterVisibleGroupIndexes=clutterScan.groups.map(function(_g,idx){ return idx; }).filter(function(idx){
+    return groupMatchesFilters(clutterScan.groups[idx]);
+  });
+  if(clutterScan.selectedGroup>=clutterScan.groups.length) clutterScan.selectedGroup=Math.max(0,clutterScan.groups.length-1);
+  clutterScan.reclaimableBytes=clutterScan.groups.reduce(function(acc,g){ return acc+(g.reclaimableBytes||0); },0);
+}
+function ensureClutterSelectionVisible(){
+  if(!clutterVisibleGroupIndexes.length) return;
+  if(clutterVisibleGroupIndexes.indexOf(clutterScan.selectedGroup)>=0) return;
+  clutterScan.selectedGroup=clutterVisibleGroupIndexes[0];
+}
+function renderClutterToolbarMeta(){
+  var el=document.getElementById('clutter-toolbar-meta');
+  if(!el) return;
+  var visible=clutterVisibleGroupIndexes.length;
+  var total=clutterScan.groups.length;
+  var selectedFiles=0;
+  var selectedBytes=0;
+  clutterVisibleGroupIndexes.forEach(function(idx){
+    var g=clutterScan.groups[idx];
+    (g.files||[]).forEach(function(f){
+      if(f.selected){selectedFiles+=1;selectedBytes+=Number(f.size)||0;}
+    });
+  });
+  var hidden=Math.max(0,total-visible);
+  el.innerHTML=
+    '<span class="clutter-chip">Visible groups: '+visible+' / '+total+'</span>'+
+    '<span class="clutter-chip">Selected in view: '+selectedFiles+' files · '+fmt(selectedBytes)+'</span>'+
+    '<span class="clutter-chip">'+clutterKeepLabel(clutterView.keepMode)+'</span>'+
+    '<span class="clutter-chip">Scan depth: '+clutterProfileConfig(clutterView.scanProfile).label+'</span>'+
+    (hidden?('<span class="clutter-chip">'+hidden+' hidden by filters</span>'):'');
+}
+function renderClutterStats(){
+  var filesEl=document.getElementById('clutter-stat-files');
+  var bytesEl=document.getElementById('clutter-stat-bytes');
+  var groupsEl=document.getElementById('clutter-stat-groups');
+  var reclaimEl=document.getElementById('clutter-stat-reclaim');
+  var timeEl=document.getElementById('clutter-stat-time');
+  if(filesEl) filesEl.textContent=clutterScan.scannedFiles?clutterScan.scannedFiles.toLocaleString():'—';
+  if(bytesEl) bytesEl.textContent=clutterScan.scannedBytes?('Across '+fmt(clutterScan.scannedBytes)+' · '+clutterProfileConfig(clutterView.scanProfile).label+' profile'):'No scan yet';
+  if(groupsEl) groupsEl.textContent=clutterScan.groups.length?clutterScan.groups.length:'—';
+  if(reclaimEl) reclaimEl.textContent=clutterScan.reclaimableBytes?fmt(clutterScan.reclaimableBytes):'—';
+  if(timeEl) timeEl.textContent=clutterScan.durationMs?('Last scan in '+(clutterScan.durationMs/1000).toFixed(1)+'s'):'Ready to scan';
+  renderClutterToolbarMeta();
+}
+function renderClutterGroups(){
+  var el=document.getElementById('clutter-groups');
+  if(!el) return;
+  if(!clutterScan.groups.length){
+    el.innerHTML='<div class="dup-empty"><div style="font-size:28px;margin-bottom:8px">🧬</div><div>No duplicate groups yet.</div><div style="margin-top:6px;font-size:12px">Click <b>Scan Duplicates</b> to analyze Downloads, Desktop, Documents, Pictures, and Movies.</div></div>';
+    return;
+  }
+  if(!clutterVisibleGroupIndexes.length){
+    el.innerHTML='<div class="dup-empty"><div style="font-size:28px;margin-bottom:8px">🔎</div><div>No groups match current filters.</div><div style="margin-top:6px;font-size:12px">Adjust Type Filter or Search to show results.</div></div>';
+    return;
+  }
+  ensureClutterSelectionVisible();
+  el.innerHTML='<div class="dup-group-list">'+clutterVisibleGroupIndexes.map(function(rawIndex){
+    var group=clutterScan.groups[rawIndex];
+    var lead=(group.files[0]&&group.files[0].name)?group.files[0].name:'Duplicate Group';
+    var primary=groupPrimaryCategory(group);
+    return '<div class="dup-group-item '+(rawIndex===clutterScan.selectedGroup?'active':'')+'" onclick="selectDuplicateGroup('+rawIndex+')">'+
+      '<div class="dup-group-top"><div class="dup-group-name">'+escHtml(lead)+'</div><span class="tag" style="background:rgba(127,107,255,0.18);color:#d8cfff">'+group.count+' files</span></div>'+
+      '<div class="dup-group-meta">Reclaimable: '+group.reclaimableStr+' · '+duplicateCategoryLabel(primary)+'</div>'+
+      '</div>';
+  }).join('')+'</div>';
+}
+function renderClutterDetail(){
+  var el=document.getElementById('clutter-detail');
+  if(!el) return;
+  if(!clutterScan.groups.length){
+    el.innerHTML='<div class="dup-empty">Run a scan and select a duplicate group to inspect file paths and cleanup options.</div>';
+    return;
+  }
+  if(!clutterVisibleGroupIndexes.length){
+    el.innerHTML='<div class="dup-empty">No duplicate groups match the current filters.</div>';
+    return;
+  }
+  ensureClutterSelectionVisible();
+  var group=clutterScan.groups[clutterScan.selectedGroup];
+  if(!group){
+    el.innerHTML='<div class="dup-empty">Select a group from the left panel.</div>';
+    return;
+  }
+  var selectedCount=group.files.filter(function(f){return f.selected;}).length;
+  var selectedBytes=group.files.reduce(function(acc,f){return acc+(f.selected?f.size:0);},0);
+  var hashLabel=(group.hash||'unknown').slice(0,16);
+  var keepName=((group.files||[]).find(function(f){return f.path===group.keepPath;})||{}).name||'Unknown';
+  el.innerHTML=
+    '<div style="margin-bottom:10px;font-size:12px;color:var(--muted)">Hash '+escHtml(hashLabel)+'… · '+group.count+' copies · '+group.sizeStr+' each · '+clutterKeepLabel(clutterView.keepMode)+' ('+escHtml(keepName)+')</div>'+
+    '<div class="dup-detail-list">'+group.files.map(function(file,fileIndex){
+      var isKeep=file.path===group.keepPath;
+      return '<div class="dup-file-row '+(isKeep?'keep':'')+'">'+
+        '<input class="dup-check" type="checkbox" '+(file.selected?'checked':'')+(isKeep?' disabled':'')+' onchange="setDuplicateSelected('+fileIndex+',this.checked)">'+
+        '<div class="dup-file-main"><div class="dup-file-name">'+escHtml(file.name)+'</div><div class="dup-file-meta">'+escHtml(file.dir)+' · '+escHtml(file.sizeStr)+' · '+escHtml(fmtTime(file.modifiedAt))+' · '+duplicateCategoryLabel(file.category||'other')+(isKeep?' · Keep':'')+'</div></div>'+
+        '<button class="btn btn-ghost btn-sm" onclick="window.api.openInFinder(\''+escJs(file.path)+'\')">Reveal</button>'+
+      '</div>';
+    }).join('')+'</div>'+
+    '<div class="dup-actions">'+
+      '<button class="btn btn-primary btn-sm" id="clutter-trash-btn" onclick="trashSelectedDuplicates()" '+(selectedCount?'' :'disabled')+'>🗑️ Move Selected to Trash</button>'+
+      '<button class="btn btn-ghost btn-sm" onclick="autoSelectDuplicateGroup()">Auto-select Non-Keep</button>'+
+      '<button class="btn btn-ghost btn-sm" onclick="applyKeepModeCurrentGroup()">Apply Keep Rule</button>'+
+      '<button class="btn btn-ghost btn-sm" onclick="clearDuplicateSelectionGroup()">Clear Selection</button>'+
+    '</div>'+
+    '<div style="margin-top:8px;font-size:12px;color:var(--muted)">Selected '+selectedCount+' file'+(selectedCount===1?'':'s')+' · '+fmt(selectedBytes)+' to reclaim</div>';
+}
+function selectDuplicateGroup(index){
+  clutterScan.selectedGroup=index;
+  renderClutterGroups();
+  renderClutterDetail();
+}
+function setDuplicateSelected(fileIndex,isChecked){
+  var group=clutterScan.groups[clutterScan.selectedGroup];
+  if(!group||!group.files[fileIndex]) return;
+  var file=group.files[fileIndex];
+  if(file.path===group.keepPath) return;
+  file.selected=!!isChecked;
+  recomputeClutterStats();
+  renderClutterStats();
+  renderClutterGroups();
+  renderClutterDetail();
+  loadSmartCare();
+}
+function autoSelectDuplicateGroup(){
+  var group=clutterScan.groups[clutterScan.selectedGroup];
+  if(!group) return;
+  applyKeepModeToGroup(group,clutterView.keepMode,true);
+  recomputeClutterStats();
+  renderClutterStats();
+  renderClutterGroups();
+  renderClutterDetail();
+  loadSmartCare();
+}
+function clearDuplicateSelectionGroup(){
+  var group=clutterScan.groups[clutterScan.selectedGroup];
+  if(!group) return;
+  group.files.forEach(function(file){ file.selected=false; });
+  recomputeClutterStats();
+  renderClutterStats();
+  renderClutterGroups();
+  renderClutterDetail();
+  loadSmartCare();
+}
+function applyKeepModeCurrentGroup(){
+  var group=clutterScan.groups[clutterScan.selectedGroup];
+  if(!group) return;
+  applyKeepModeToGroup(group,clutterView.keepMode,true);
+  recomputeClutterStats();
+  renderClutterStats();
+  renderClutterGroups();
+  renderClutterDetail();
+  loadSmartCare();
+  notice('clutter-notice','success','⚙️','Keep rule applied','Current group updated with '+clutterKeepLabel(clutterView.keepMode)+'.');
+}
+function applyKeepModeAllGroups(){
+  if(!clutterScan.groups.length){
+    notice('clutter-notice','info','ℹ️','No duplicate groups','Run a duplicate scan first.');
+    return;
+  }
+  clutterScan.groups.forEach(function(group){
+    applyKeepModeToGroup(group,clutterView.keepMode,true);
+  });
+  recomputeClutterStats();
+  renderClutterStats();
+  renderClutterGroups();
+  renderClutterDetail();
+  loadSmartCare();
+  notice('clutter-notice','success','⚙️','Keep rule applied','Updated '+clutterScan.groups.length+' groups with '+clutterKeepLabel(clutterView.keepMode)+'.');
+}
+function bulkSelectFilteredDuplicates(){
+  if(!clutterVisibleGroupIndexes.length){
+    notice('clutter-notice','info','ℹ️','No visible groups','Adjust filters or run a scan.');
+    return;
+  }
+  clutterVisibleGroupIndexes.forEach(function(idx){
+    var group=clutterScan.groups[idx];
+    if(!group) return;
+    group.files.forEach(function(file){
+      file.selected=file.path!==group.keepPath;
+    });
+  });
+  recomputeClutterStats();
+  renderClutterStats();
+  renderClutterGroups();
+  renderClutterDetail();
+  loadSmartCare();
+  notice('clutter-notice','success','✅','Selection updated','Selected non-keep duplicates across '+clutterVisibleGroupIndexes.length+' visible groups.');
+}
+function bulkClearFilteredDuplicates(){
+  if(!clutterVisibleGroupIndexes.length){
+    notice('clutter-notice','info','ℹ️','No visible groups','Adjust filters or run a scan.');
+    return;
+  }
+  clutterVisibleGroupIndexes.forEach(function(idx){
+    var group=clutterScan.groups[idx];
+    if(!group) return;
+    group.files.forEach(function(file){ file.selected=false; });
+  });
+  recomputeClutterStats();
+  renderClutterStats();
+  renderClutterGroups();
+  renderClutterDetail();
+  loadSmartCare();
+  notice('clutter-notice','success','✅','Selection cleared','Cleared selections across '+clutterVisibleGroupIndexes.length+' visible groups.');
+}
+function setClutterScanProfile(value){
+  clutterView.scanProfile=(value==='quick'||value==='balanced'||value==='deep')?value:'balanced';
+  renderClutterStats();
+}
+function setClutterKeepMode(value){
+  clutterView.keepMode=(value==='oldest'||value==='shortest-path'||value==='newest')?value:'newest';
+  renderClutterToolbarMeta();
+  renderClutterDetail();
+}
+function setClutterFilterType(value){
+  clutterView.filterType=(value==='image'||value==='video'||value==='archive'||value==='document'||value==='audio'||value==='code'||value==='other')?value:'all';
+  recomputeClutterStats();
+  renderClutterStats();
+  renderClutterGroups();
+  renderClutterDetail();
+}
+function setClutterSearch(value){
+  clutterView.search=String(value||'').trim();
+  recomputeClutterStats();
+  renderClutterStats();
+  renderClutterGroups();
+  renderClutterDetail();
+}
+function resetDuplicateResults(){
+  clutterScan.groups=[];
+  clutterScan.scannedFiles=0;
+  clutterScan.scannedBytes=0;
+  clutterScan.reclaimableBytes=0;
+  clutterScan.durationMs=0;
+  clutterScan.roots=[];
+  clutterScan.selectedGroup=0;
+  clutterVisibleGroupIndexes=[];
+  renderClutterStats();
+  renderClutterGroups();
+  renderClutterDetail();
+  loadSmartCare();
+}
+async function scanDuplicates(){
+  if(clutterScan.inProgress) return;
+  clutterScan.inProgress=true;
+  loadSmartCare();
+  var profileCfg=clutterProfileConfig(clutterView.scanProfile);
+  var btn=document.getElementById('clutter-scan-btn');
+  if(btn){btn.disabled=true;btn.innerHTML='<span class="spin">⟳</span> Scanning…';}
+  var groupsEl=document.getElementById('clutter-groups');
+  var detailEl=document.getElementById('clutter-detail');
+  if(groupsEl) groupsEl.innerHTML='<div class="skel" style="height:280px;border-radius:10px"></div>';
+  if(detailEl) detailEl.innerHTML='<div class="skel" style="height:280px;border-radius:10px"></div>';
+  try{
+    var res=await bridge.scanDuplicates({
+      minSizeBytes:profileCfg.minSizeBytes,
+      maxFiles:profileCfg.maxFiles,
+      maxGroups:profileCfg.maxGroups,
+    });
+    if(!res||!res.success){
+      notice('clutter-notice','error','⚠️','Duplicate scan failed',res&&res.error?res.error:'Unknown error');
+      return;
+    }
+    clutterScan.scannedFiles=res.scannedFiles||0;
+    clutterScan.scannedBytes=res.scannedBytes||0;
+    clutterScan.durationMs=res.durationMs||0;
+    clutterScan.roots=Array.isArray(res.roots)?res.roots:[];
+    clutterScan.groups=Array.isArray(res.groups)?res.groups:[];
+    clutterScan.selectedGroup=0;
+    recomputeClutterStats();
+    renderClutterStats();
+    renderClutterGroups();
+    renderClutterDetail();
+    if(clutterScan.groups.length){
+      notice('clutter-notice','success','✅','Duplicate scan complete','Found '+clutterScan.groups.length+' groups · '+fmt(clutterScan.reclaimableBytes)+' reclaimable ('+profileCfg.label+' scan).');
+    }else{
+      notice('clutter-notice','success','✅','No duplicates found','Scanned '+clutterScan.scannedFiles.toLocaleString()+' files using '+profileCfg.label+' profile.');
+    }
+  }catch(e){
+    notice('clutter-notice','error','⚠️','Duplicate scan failed',e.message);
+  }finally{
+    clutterScan.inProgress=false;
+    if(btn){btn.disabled=false;btn.innerHTML='🔎 Scan Duplicates';}
+    loadSmartCare();
+  }
+}
+async function trashSelectedDuplicates(){
+  var group=clutterScan.groups[clutterScan.selectedGroup];
+  if(!group) return;
+  var targets=group.files.filter(function(f){return f.selected;}).map(function(f){return f.path;});
+  if(!targets.length){
+    notice('clutter-notice','info','ℹ️','Nothing selected','Select duplicate files to move them to Trash.');
+    return;
+  }
+  var btn=document.getElementById('clutter-trash-btn');
+  if(btn){btn.disabled=true;btn.innerHTML='<span class="spin">⟳</span> Moving…';}
+  try{
+    var res=await bridge.trashPaths(targets);
+    var removed=new Set((res&&res.trashed)||[]);
+    group.files=group.files.filter(function(f){return !removed.has(f.path);});
+    if(group.files.length<2){
+      clutterScan.groups.splice(clutterScan.selectedGroup,1);
+    }
+    recomputeClutterStats();
+    renderClutterStats();
+    renderClutterGroups();
+    renderClutterDetail();
+    if(res&&res.failed&&res.failed.length){
+      var moved=(res.trashed||[]).length;
+      notice('clutter-notice','error','⚠️','Trash completed with warnings',moved+' moved, '+res.failed.length+' failed.');
+    }else{
+      notice('clutter-notice','success','🗑️','Moved to Trash',targets.length+' duplicate file'+(targets.length===1?'':'s')+' moved safely.');
+    }
+  }catch(e){
+    notice('clutter-notice','error','⚠️','Trash operation failed',e.message);
+  }finally{
+    loadSmartCare();
+  }
+}
+
+function roadmapRow(title,state,labelClass){
+  return '<div class="road-row"><span>'+title+'</span><strong class="'+labelClass+'">'+state+'</strong></div>';
+}
+async function loadClutter(){
+  syncClutterControls();
+  recomputeClutterStats();
+  renderClutterStats();
+  renderClutterGroups();
+  renderClutterDetail();
+}
+function cloudHasStaleCandidates(){
+  return (cloudState.providers||[]).some(function(p){
+    return !!p.present && Number(p.staleCount||0)>0;
+  });
+}
+function shortHomePath(v){
+  return String(v||'').replace(/^\/Users\/[^/]+/, '~');
+}
+function renderCloudActionState(){
+  var scanBtn=document.getElementById('cloud-scan-btn');
+  if(scanBtn){
+    scanBtn.disabled=cloudState.loading||cloudState.cleaningAll||!!cloudState.cleaningProvider;
+    scanBtn.innerHTML=cloudState.loading?'<span class="spin">⟳</span> Scanning…':'↻ Scan';
+  }
+  var cleanAllBtn=document.getElementById('cloud-clean-all-btn');
+  if(cleanAllBtn){
+    cleanAllBtn.disabled=cloudState.loading||cloudState.cleaningAll||!!cloudState.cleaningProvider||!cloudHasStaleCandidates();
+    cleanAllBtn.innerHTML=cloudState.cleaningAll?'<span class="spin">⟳</span> Cleaning…':'🧹 Clean All Stale Cache';
+  }
+}
+function renderCloudSummary(){
+  var summary=cloudState.summary||{};
+  var providers=(cloudState.providers||[]);
+  var providersEl=document.getElementById('cloud-stat-providers');
+  var providersSubEl=document.getElementById('cloud-stat-providers-sub');
+  var syncEl=document.getElementById('cloud-stat-sync');
+  var cacheEl=document.getElementById('cloud-stat-cache');
+  var staleEl=document.getElementById('cloud-stat-stale');
+  var staleSubEl=document.getElementById('cloud-stat-stale-sub');
+  var heroMetaEl=document.getElementById('cloud-hero-meta');
+  if(providersEl) providersEl.textContent=String(summary.providersDetected||0);
+  if(providersSubEl) providersSubEl.textContent=(providers.length||0)+' connectors scanned';
+  if(syncEl) syncEl.textContent=fmt(summary.syncBytes||0);
+  if(cacheEl) cacheEl.textContent=fmt(summary.cacheBytes||0);
+  if(staleEl) staleEl.textContent=fmt(summary.staleBytes||0);
+  if(staleSubEl) staleSubEl.textContent=(summary.staleCount||0)+' stale files older than '+cloudState.staleDays+' days';
+  if(heroMetaEl){
+    heroMetaEl.textContent=summary.scannedAt
+      ? ('Last scan: '+fmtTime(summary.scannedAt)+' · stale threshold: '+cloudState.staleDays+' days')
+      : ('No cloud scan yet. Click Scan to analyze provider cache data.');
+  }
+  renderCloudActionState();
+}
+function renderCloudProviders(){
+  var el=document.getElementById('cloud-providers');
+  if(!el) return;
+  var providers=cloudState.providers||[];
+  if(!providers.length){
+    el.innerHTML='<div class="dup-empty"><div style="font-size:28px;margin-bottom:8px">☁️</div><div>No providers found.</div><div style="margin-top:6px;font-size:12px">Install or sign in to iCloud Drive, Google Drive, or OneDrive on this Mac, then scan again.</div></div>';
+    return;
+  }
+  el.innerHTML='<div class="cloud-provider-list">'+providers.map(function(provider){
+    var present=!!provider.present;
+    var hasStale=Number(provider.staleCount||0)>0;
+    var busy=cloudState.cleaningProvider===provider.id;
+    var canClean=present && hasStale && !cloudState.loading && !cloudState.cleaningAll && !cloudState.cleaningProvider;
+    var revealTarget=(provider.cacheRoots&&provider.cacheRoots.length)?provider.cacheRoots[0]:((provider.syncRoots&&provider.syncRoots.length)?provider.syncRoots[0]:'');
+    var roots=[]
+      .concat((provider.syncRoots||[]).map(function(p){return 'Sync: '+shortHomePath(p);}))
+      .concat((provider.cacheRoots||[]).map(function(p){return 'Cache: '+shortHomePath(p);}))
+      .slice(0,4);
+    return '<div class="cloud-provider '+(present?'':'offline')+'">'+
+      '<div class="cloud-provider-head">'+
+        '<div class="cloud-provider-name"><span class="cloud-provider-icon">'+escHtml(provider.icon||'☁️')+'</span><span>'+escHtml(provider.name||provider.id)+'</span></div>'+
+        '<span class="cloud-badge '+(present?'on':'off')+'">'+(present?'Detected':'Not detected')+'</span>'+
+      '</div>'+
+      '<div class="cloud-metrics">'+
+        '<div class="cloud-metric"><span>Synced Data</span><strong>'+escHtml(provider.syncStr||fmt(provider.syncBytes||0))+'</strong></div>'+
+        '<div class="cloud-metric"><span>Local Cache</span><strong>'+escHtml(provider.cacheStr||fmt(provider.cacheBytes||0))+'</strong></div>'+
+        '<div class="cloud-metric"><span>Stale Candidates</span><strong>'+escHtml(provider.staleStr||fmt(provider.staleBytes||0))+' · '+Number(provider.staleCount||0)+' files</strong></div>'+
+      '</div>'+
+      (roots.length?('<div class="cloud-roots">'+roots.map(function(root){return '<span class="cloud-root">'+escHtml(root)+'</span>';}).join('')+'</div>'):'')+
+      '<div class="cloud-actions">'+
+        (revealTarget?('<button class="btn btn-ghost btn-sm" onclick="revealCloudPath(\''+escJs(revealTarget)+'\')">Reveal Folder</button>'):'')+
+        '<button class="btn '+(hasStale?'btn-primary':'btn-ghost')+' btn-sm" onclick="cleanCloudProvider(\''+escJs(provider.id)+'\')" '+(canClean?'':'disabled')+'>'+(busy?'<span class="spin">⟳</span> Cleaning…':'🧹 Clean Stale Cache')+'</button>'+
+      '</div>'+
+    '</div>';
+  }).join('')+'</div>';
+  renderCloudActionState();
+}
+function setCloudStaleDays(value){
+  var days=parseInt(value,10);
+  if(!Number.isFinite(days)) return;
+  cloudState.staleDays=Math.max(7,Math.min(120,days));
+  renderCloudSummary();
+  loadCloud(true);
+}
+function revealCloudPath(targetPath){
+  if(!targetPath) return;
+  bridge.openInFinder(targetPath);
+}
+async function cleanCloudProvider(providerId){
+  if(cloudState.loading||cloudState.cleaningAll||cloudState.cleaningProvider) return;
+  var provider=(cloudState.providers||[]).find(function(p){return p.id===providerId;});
+  if(!provider){
+    notice('cloud-notice','error','⚠️','Cleanup failed','Cloud provider not found in current report.');
+    return;
+  }
+  var staleCount=Number(provider.staleCount||0);
+  if(!provider.present || staleCount<1){
+    notice('cloud-notice','info','ℹ️','Nothing to clean',provider.name+' has no stale cache files at the selected threshold.');
+    return;
+  }
+  var confirmed=window.confirm('Move stale cache files for '+provider.name+' to Trash?\\n\\nUp to '+staleCount+' file'+(staleCount===1?'':'s')+' will be moved.');
+  if(!confirmed) return;
+  cloudState.cleaningProvider=providerId;
+  renderCloudProviders();
+  try{
+    var res=await bridge.cleanCloudProviderCache({providerId:providerId,staleDays:cloudState.staleDays,maxFiles:cloudState.maxFiles});
+    var moved=(res&&res.trashedCount)||0;
+    var movedBytes=(res&&res.trashedBytes)||0;
+    var failed=(res&&Array.isArray(res.failed))?res.failed.length:0;
+    if(res&&res.success){
+      notice('cloud-notice','success','✅','Cleanup complete',provider.name+': moved '+moved+' stale file'+(moved===1?'':'s')+' to Trash ('+fmt(movedBytes)+').');
+    }else{
+      var fallback=(res&&res.error)?res.error:(moved+' moved, '+failed+' failed.');
+      notice('cloud-notice','error','⚠️','Cleanup finished with warnings',provider.name+': '+fallback);
+    }
+  }catch(e){
+    notice('cloud-notice','error','⚠️','Cleanup failed',e.message);
+  }finally{
+    cloudState.cleaningProvider=null;
+    await loadCloud(false);
+    loadSmartCare();
+  }
+}
+async function cleanAllCloudCaches(){
+  if(cloudState.loading||cloudState.cleaningAll||cloudState.cleaningProvider) return;
+  var targets=(cloudState.providers||[]).filter(function(p){
+    return !!p.present && Number(p.staleCount||0)>0;
+  });
+  if(!targets.length){
+    notice('cloud-notice','info','ℹ️','Nothing to clean','No stale cache files found across connected providers.');
+    return;
+  }
+  var confirmed=window.confirm('Move stale cache files for '+targets.length+' provider'+(targets.length===1?'':'s')+' to Trash?');
+  if(!confirmed) return;
+  cloudState.cleaningAll=true;
+  renderCloudActionState();
+  var totalMoved=0,totalBytes=0,totalFailed=0;
+  try{
+    for(var i=0;i<targets.length;i++){
+      var p=targets[i];
+      var res=await bridge.cleanCloudProviderCache({providerId:p.id,staleDays:cloudState.staleDays,maxFiles:cloudState.maxFiles});
+      totalMoved+=(res&&res.trashedCount)||0;
+      totalBytes+=(res&&res.trashedBytes)||0;
+      totalFailed+=(res&&Array.isArray(res.failed))?res.failed.length:0;
+    }
+    if(totalFailed===0){
+      notice('cloud-notice','success','✅','Cloud cleanup complete','Moved '+totalMoved+' stale file'+(totalMoved===1?'':'s')+' to Trash ('+fmt(totalBytes)+').');
+    }else{
+      notice('cloud-notice','error','⚠️','Cloud cleanup finished with warnings',totalMoved+' moved, '+totalFailed+' failed. Check provider rows and retry.');
+    }
+  }catch(e){
+    notice('cloud-notice','error','⚠️','Cloud cleanup failed',e.message);
+  }finally{
+    cloudState.cleaningAll=false;
+    await loadCloud(false);
+    loadSmartCare();
+  }
+}
+async function loadCloud(forceNotice){
+  if(cloudState.loading) return;
+  cloudState.loading=true;
+  renderCloudActionState();
+  var providersEl=document.getElementById('cloud-providers');
+  if(providersEl){
+    providersEl.innerHTML=
+      '<div class="cloud-provider-list">'+
+        '<div class="skel" style="height:126px;border-radius:12px"></div>'+
+        '<div class="skel" style="height:126px;border-radius:12px"></div>'+
+      '</div>';
+  }
+  try{
+    var res=await bridge.getCloudCleanupReport({staleDays:cloudState.staleDays,maxFiles:cloudState.maxFiles});
+    if(!res||!res.success){
+      notice('cloud-notice','error','⚠️','Cloud scan failed',res&&res.error?res.error:'Unknown error');
+      return;
+    }
+    cloudState.staleDays=Number(res.staleDays)||cloudState.staleDays;
+    cloudState.summary=res.summary||cloudState.summary;
+    cloudState.providers=Array.isArray(res.providers)?res.providers:[];
+    var staleSel=document.getElementById('cloud-stale-days');
+    if(staleSel) staleSel.value=String(cloudState.staleDays);
+    renderCloudSummary();
+    renderCloudProviders();
+    if(forceNotice){
+      var summary=cloudState.summary||{};
+      notice('cloud-notice','success','☁️','Cloud scan complete',(summary.staleCount||0)+' stale file'+((summary.staleCount||0)===1?'':'s')+' · '+fmt(summary.staleBytes||0)+' reclaimable cache.');
+    }
+  }catch(e){
+    notice('cloud-notice','error','⚠️','Cloud scan failed',e.message);
+    if(providersEl) providersEl.innerHTML='<div class="dup-empty">Cloud providers could not be scanned.</div>';
+  }finally{
+    cloudState.loading=false;
+    renderCloudActionState();
+  }
+}
+function lensVisibleItems(){
+  var type=lensState.filterType||'all';
+  var term=String(lensState.search||'').trim().toLowerCase();
+  return (lensState.items||[]).filter(function(item){
+    if(type!=='all' && item.type!==type) return false;
+    if(!term) return true;
+    var hay=(String(item.name||'')+' '+String(item.path||'')).toLowerCase();
+    return hay.indexOf(term)>=0;
+  });
+}
+function lensSelectedItems(){
+  var existing=new Set((lensState.items||[]).map(function(item){return item.path;}));
+  lensState.selectedPaths=new Set(Array.from(lensState.selectedPaths).filter(function(p){return existing.has(p);}));
+  return (lensState.items||[]).filter(function(item){ return lensState.selectedPaths.has(item.path); });
+}
+function renderLensToolbar(){
+  var filterEl=document.getElementById('lens-filter-type');
+  var searchEl=document.getElementById('lens-search');
+  if(filterEl && filterEl.value!==lensState.filterType) filterEl.value=lensState.filterType;
+  if(searchEl && searchEl.value!==lensState.search) searchEl.value=lensState.search;
+
+  var visible=lensVisibleItems();
+  var selected=lensSelectedItems();
+  var selectedBytes=selected.reduce(function(acc,item){ return acc+(item.size||0); },0);
+  var selectedDirs=selected.filter(function(item){ return item.type==='directory'; }).length;
+  var selectedFiles=selected.length-selectedDirs;
+
+  var metaEl=document.getElementById('lens-toolbar-meta');
+  if(metaEl){
+    metaEl.innerHTML=
+      '<span class="lens-chip">Visible: '+visible.length+' / '+(lensState.items||[]).length+'</span>'+
+      '<span class="lens-chip">Selected: '+selected.length+' item'+(selected.length===1?'':'s')+' · '+fmt(selectedBytes)+'</span>'+
+      '<span class="lens-chip">'+selectedDirs+' folder'+(selectedDirs===1?'':'s')+' · '+selectedFiles+' file'+(selectedFiles===1?'':'s')+'</span>';
+  }
+
+  var canSelect=!!visible.length && !lensState.loading && !lensState.cleaning;
+  var canClear=!!selected.length && !lensState.loading && !lensState.cleaning;
+  var canTrash=!!selected.length && !lensState.loading && !lensState.cleaning;
+  var selectBtn=document.getElementById('lens-select-visible-btn');
+  var clearBtn=document.getElementById('lens-clear-selected-btn');
+  var trashBtn=document.getElementById('lens-trash-btn');
+  if(selectBtn) selectBtn.disabled=!canSelect;
+  if(clearBtn) clearBtn.disabled=!canClear;
+  if(trashBtn){
+    trashBtn.disabled=!canTrash;
+    trashBtn.innerHTML=lensState.cleaning?'<span class="spin">⟳</span> Trashing…':'🗑️ Trash Selected';
+  }
+}
+function setLensFilterType(value){
+  lensState.filterType=(value==='directory'||value==='file')?value:'all';
+  renderLensToolbar();
+  renderLensSources();
+  renderLensMap();
+}
+function setLensSearch(value){
+  lensState.search=String(value||'').trim();
+  renderLensToolbar();
+  renderLensSources();
+  renderLensMap();
+}
+function lensToggleSelection(targetPath,isChecked){
+  var itemPath=String(targetPath||'');
+  if(!itemPath) return;
+  if(isChecked) lensState.selectedPaths.add(itemPath);
+  else lensState.selectedPaths.delete(itemPath);
+  renderLensToolbar();
+  renderLensSources();
+  renderLensMap();
+}
+function lensSelectVisible(){
+  if(lensState.loading || lensState.cleaning) return;
+  lensVisibleItems().forEach(function(item){ lensState.selectedPaths.add(item.path); });
+  renderLensToolbar();
+  renderLensSources();
+  renderLensMap();
+}
+function lensClearSelection(){
+  lensState.selectedPaths.clear();
+  renderLensToolbar();
+  renderLensSources();
+  renderLensMap();
+}
+async function trashSelectedLensItems(){
+  if(lensState.loading || lensState.cleaning) return;
+  var selected=lensSelectedItems();
+  if(!selected.length){
+    notice('lens-notice','info','ℹ️','Nothing selected','Select files/folders from the list or map first.');
+    return;
+  }
+  var selectedBytes=selected.reduce(function(acc,item){ return acc+(item.size||0); },0);
+  var dirCount=selected.filter(function(item){ return item.type==='directory'; }).length;
+  var fileCount=selected.length-dirCount;
+  var confirmed=window.confirm(
+    'Move '+selected.length+' selected item'+(selected.length===1?'':'s')+' to Trash?\n\n'+
+    fileCount+' file'+(fileCount===1?'':'s')+', '+dirCount+' folder'+(dirCount===1?'':'s')+' · '+fmt(selectedBytes)
+  );
+  if(!confirmed) return;
+
+  lensState.cleaning=true;
+  renderLensToolbar();
+  try{
+    var res=await bridge.trashPaths(selected.map(function(item){ return item.path; }));
+    var moved=(res&&res.trashed)?res.trashed.length:0;
+    var movedBytes=(res&&res.trashedBytes)?res.trashedBytes:0;
+    var failed=(res&&res.failed)?res.failed.length:0;
+    if(failed){
+      notice('lens-notice','error','⚠️','Cleanup finished with warnings',moved+' moved, '+failed+' failed.');
+    }else{
+      notice('lens-notice','success','🗑️','Items moved to Trash',moved+' item'+(moved===1?'':'s')+' · '+fmt(movedBytes)+' moved.');
+    }
+    lensState.selectedPaths.clear();
+    await loadLens(lensState.path||null);
+    loadSmartCare();
+    loadDashboard();
+  }catch(e){
+    notice('lens-notice','error','⚠️','Space Lens cleanup failed',e.message);
+  }finally{
+    lensState.cleaning=false;
+    renderLensToolbar();
+  }
+}
+function renderLensSources(){
+  var src=document.getElementById('lens-sources');
+  if(!src) return;
+  var visible=lensVisibleItems();
+  var selected=lensSelectedItems();
+  var selectedBytes=selected.reduce(function(acc,item){ return acc+(item.size||0); },0);
+  var crumbs=(lensState.breadcrumbs||[]).map(function(c){
+    return '<button class="lens-crumb" onclick="lensOpen(\''+escJs(c.path)+'\')" '+(lensState.loading||lensState.cleaning?'disabled':'')+'>'+escHtml(c.name)+'</button>';
+  }).join('');
+  var list=visible.map(function(item){
+    var isSelected=lensState.selectedPaths.has(item.path);
+    var action=item.type==='directory'
+      ? '<button class="btn btn-ghost btn-sm" onclick="lensOpen(\''+escJs(item.path)+'\')" '+(lensState.loading||lensState.cleaning?'disabled':'')+'>Open</button>'
+      : '<button class="btn btn-ghost btn-sm" onclick="window.api.openInFinder(\''+escJs(item.path)+'\')" '+(lensState.loading||lensState.cleaning?'disabled':'')+'>Reveal</button>';
+    return '<div class="lens-row '+(isSelected?'selected':'')+'">'+
+      '<input class="lens-check" type="checkbox" '+(isSelected?'checked':'')+' onchange="lensToggleSelection(\''+escJs(item.path)+'\',this.checked)" '+(lensState.loading||lensState.cleaning?'disabled':'')+'>'+
+      '<div><div class="lens-name">'+escHtml(item.name)+'</div><div class="lens-meta">'+escHtml(item.path)+' · '+item.pct+'%</div></div>'+
+      '<span class="lens-pill '+(item.type==='directory'?'dir':'file')+'">'+(item.type==='directory'?'Folder':'File')+'</span>'+
+      '<div style="display:flex;gap:8px;align-items:center"><span style="font-size:12px;font-weight:700;min-width:70px;text-align:right">'+escHtml(item.sizeStr)+'</span>'+action+'</div>'+
+    '</div>';
+  }).join('');
+  src.innerHTML=
+    '<div class="lens-crumbs">'+crumbs+'</div>'+
+    '<div style="font-size:12px;color:var(--muted);margin-bottom:10px">Showing '+visible.length+' items · Total '+escHtml(lensState.totalStr)+' · Listed '+escHtml(lensState.listedStr)+' · Selected '+selected.length+' ('+fmt(selectedBytes)+')</div>'+
+    (visible.length?'<div class="lens-list">'+list+'</div>':'<div class="dup-empty">No visible files/folders match current filter.</div>');
+}
+function renderLensMap(){
+  var map=document.getElementById('lens-map');
+  if(!map) return;
+  var items=lensVisibleItems().slice(0,12);
+  if(!items.length){
+    map.innerHTML='<div class="dup-empty">No data yet. Click Rescan.</div>';
+    return;
+  }
+  var max=items[0].size||1;
+  map.innerHTML=
+    '<div style="font-size:12px;color:var(--muted);margin-bottom:10px">Top '+items.length+' items by size (click bubble to open/reveal, use badge to select)</div>'+
+    '<div class="lens-bubble-wrap">'+items.map(function(item){
+      var ratio=Math.max(0.15,item.size/max);
+      var dia=Math.round(66+ratio*88);
+      var isSelected=lensState.selectedPaths.has(item.path);
+      var action=item.type==='directory'
+        ? "lensOpen('"+escJs(item.path)+"')"
+        : "window.api.openInFinder('"+escJs(item.path)+"')";
+      var toggleNext=isSelected?'false':'true';
+      return '<div class="lens-bubble '+(isSelected?'selected':'')+'" style="width:'+dia+'px;height:'+dia+'px" onclick="'+action+'">'+
+        '<button class="lens-select-badge '+(isSelected?'on':'')+'" onclick="event.stopPropagation();lensToggleSelection(\''+escJs(item.path)+'\','+toggleNext+')" '+(lensState.loading||lensState.cleaning?'disabled':'')+'>'+(isSelected?'✓':'＋')+'</button>'+
+        '<div class="lens-b-name">'+escHtml(item.name)+'</div>'+
+        '<div class="lens-b-size">'+escHtml(item.sizeStr)+'</div>'+
+        '</div>';
+    }).join('')+'</div>';
+}
+function lensGoHome(){
+  lensOpen(null);
+}
+function lensGoUp(){
+  if(!lensState.parentPath) return;
+  lensOpen(lensState.parentPath);
+}
+function lensOpen(targetPath){
+  loadLens(targetPath||null);
+}
+async function loadLens(targetPath){
+  if(lensState.loading) return;
+  lensState.loading=true;
+  renderLensToolbar();
+  var src=document.getElementById('lens-sources');
+  var map=document.getElementById('lens-map');
+  if(src) src.innerHTML='<div class="skel" style="height:280px;border-radius:10px"></div>';
+  if(map) map.innerHTML='<div class="skel" style="height:280px;border-radius:10px"></div>';
+  try{
+    var res=await bridge.getSpaceLens({targetPath:targetPath||lensState.path,maxEntries:70});
+    if(!res||!res.success){
+      notice('lens-notice','error','⚠️','Space Lens scan failed',res&&res.error?res.error:'Unknown error');
+      return;
+    }
+    lensState.path=res.targetPath;
+    lensState.parentPath=res.parentPath||null;
+    lensState.breadcrumbs=Array.isArray(res.breadcrumbs)?res.breadcrumbs:[];
+    lensState.totalBytes=res.totalBytes||0;
+    lensState.totalStr=res.totalStr||fmt(res.totalBytes||0);
+    lensState.listedStr=res.listedStr||fmt(res.listedBytes||0);
+    lensState.items=Array.isArray(res.items)?res.items:[];
+    var validPaths=new Set(lensState.items.map(function(item){return item.path;}));
+    lensState.selectedPaths=new Set(Array.from(lensState.selectedPaths).filter(function(p){return validPaths.has(p);}));
+    renderLensToolbar();
+    renderLensSources();
+    renderLensMap();
+    var up=document.getElementById('lens-up-btn');
+    if(up) up.disabled=!lensState.parentPath;
+  }catch(e){
+    notice('lens-notice','error','⚠️','Space Lens scan failed',e.message);
+    if(src) src.innerHTML='<div class="dup-empty">Could not load folder sizes.</div>';
+    if(map) map.innerHTML='<div class="dup-empty">Could not render map.</div>';
+  }finally{
+    lensState.loading=false;
+    renderLensToolbar();
+  }
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-console.log('MacCleaner renderer initializing...');
+console.log('LumaSweep renderer initializing...');
 buildPrivacy();
-loadDashboard().catch(function(e){ console.error('Dashboard load failed:', e); });
+renderProtectionSummary();
+loadSmartCare().catch(function(e){ console.error('Pulse Hub load failed:', e); });
+warmSmartAppsCount(false);
 bridge.getAppVersion().then(function(v){
   var el=document.getElementById('app-version');
-  if(el && v) el.textContent='MacCleaner v'+v;
+  if(el && v) el.textContent='LumaSweep v'+v;
 }).catch(function(){});
 
 var monitorTimer=null;
 var monitorBusy=false;
 var refreshProfile='balanced';
+function refreshLabel(p){
+  if(p==='live') return 'Live (No Delay)';
+  if(p==='real-time') return 'Real-time';
+  if(p==='power-saver') return 'Power Saver';
+  return 'Balanced';
+}
 async function refreshActivePage(){
   var active=document.querySelector('.page.active');
   if(!active) return;
@@ -685,9 +2555,11 @@ function getMonitorRefreshMs(){
   var active=document.querySelector('.page.active');
   if(!active) return 30000;
   var id=active.id.replace('page-','');
-  var isMonitorPage=(id==='dashboard' || id==='ram' || id==='cpu');
-  var schedule=refreshProfile==='real-time'
-    ? {focused:3000,blurred:6000,hidden:12000,other:18000}
+  var isMonitorPage=(id==='smart-care' || id==='dashboard' || id==='ram' || id==='cpu');
+  var schedule=refreshProfile==='live'
+    ? {focused:750,blurred:1500,hidden:8000,other:12000}
+    : refreshProfile==='real-time'
+      ? {focused:3000,blurred:6000,hidden:12000,other:18000}
     : refreshProfile==='power-saver'
       ? {focused:12000,blurred:20000,hidden:30000,other:35000}
       : {focused:5000,blurred:12000,hidden:30000,other:30000};
@@ -701,7 +2573,7 @@ async function tickMonitor(){
   var active=document.querySelector('.page.active');
   if(!active) return;
   var id=active.id.replace('page-','');
-  if(id==='dashboard' || id==='ram' || id==='cpu'){
+  if(id==='smart-care' || id==='dashboard' || id==='ram' || id==='cpu'){
     monitorBusy=true;
     try{ await loaders[id](); }catch{}
     monitorBusy=false;
@@ -730,9 +2602,9 @@ async function initRefreshSettings(){
     try{
       var res=await bridge.setRefreshProfile(sel.value);
       await applyRefreshProfile(res.refreshProfile||sel.value);
-      notice('dash-notice','success','⚙️','Refresh mode updated','Now using '+(res.refreshProfile||sel.value)+' mode');
+      notice(activeNoticeTarget(),'success','⚙️','Refresh mode updated','Now using '+refreshLabel(res.refreshProfile||sel.value));
     }catch(e){
-      notice('dash-notice','error','⚠️','Could not update refresh mode',e.message);
+      notice(activeNoticeTarget(),'error','⚠️','Could not update refresh mode',e.message);
     }
   });
 }
