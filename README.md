@@ -49,14 +49,14 @@ Artifacts are generated in `dist/`:
 ## GitHub Release Flow
 
 ```bash
-git tag v1.2.0
-git push origin v1.2.0
+git tag v1.3.0
+git push origin v1.3.0
 ```
 
 Then on GitHub:
 
 1. Open `Releases` and click `Draft a new release`.
-2. Select tag `v1.2.0`.
+2. Select tag `v1.3.0`.
 3. Upload both DMGs from `dist/`.
 4. Publish.
 
@@ -77,20 +77,20 @@ Why:
 ```bash
 # 1) Commit code
 git add .
-git commit -m "Release v1.2.0"
+git commit -m "Release v1.3.0"
 
 # 2) Push code
 git push origin main
 
 # 3) Tag and push tag
-git tag v1.2.0
-git push origin v1.2.0
+git tag v1.3.0
+git push origin v1.3.0
 ```
 
 Then upload:
 
-- `dist/LumaSweep-1.2.0-arm64.dmg`
-- `dist/LumaSweep-1.2.0.dmg`
+- `dist/LumaSweep-1.3.0-arm64.dmg`
+- `dist/LumaSweep-1.3.0.dmg`
 
 ### If you must store DMGs in git
 

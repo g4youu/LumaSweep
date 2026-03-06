@@ -1,6 +1,6 @@
 {
   "name": "lumasweep",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "macOS System Cleaner & Optimizer",
   "author": "Gbenga Orenuga",
   "license": "MIT",
@@ -18,7 +18,13 @@
       "category": "public.app-category.utilities",
       "icon": "assets/icon.icns",
       "target": [
-        { "target": "dmg", "arch": ["x64", "arm64"] }
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
       ],
       "entitlements": "entitlements.mac.plist",
       "entitlementsInherit": "entitlements.mac.plist",
@@ -28,8 +34,16 @@
     "dmg": {
       "title": "LumaSweep Installer",
       "contents": [
-        { "x": 130, "y": 220 },
-        { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
       ]
     },
     "files": [

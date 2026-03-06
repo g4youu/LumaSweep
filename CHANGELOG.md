@@ -2,6 +2,19 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.3.0] - 2026-03-05
+
+- Rebranded the app to `LumaSweep` across UI, tray, prompts, and packaging metadata.
+- Added new brand icon set and tray icon assets:
+  - `assets/icon.icns`
+  - `assets/trayTemplate.png`
+  - source icon exports in `assets/icon-1024.png` and `assets/icon.iconset/`
+- Updated product metadata for distribution:
+  - `name`: `lumasweep`
+  - `appId`: `com.lumasweep.app`
+  - `productName`: `LumaSweep`
+- Refreshed README and license branding/docs for LumaSweep release packaging.
+
 ## [1.2.0] - 2026-02-23
 
 - Added CPU Monitor page with top CPU processes and Activity Monitor shortcut.
