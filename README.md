@@ -35,30 +35,58 @@ npm install
 npm start
 ```
 
-## Build Installers (.dmg)
+## Local Packaging
+
+Unsigned test bundle for local QA:
 
 ```bash
-npm run dist
+npm run build
 ```
 
-Artifacts are generated in `dist/`:
+Unsigned DMGs for local-only testing:
+
+```bash
+npm run dist:unsigned
+```
+
+These unsigned artifacts are useful for local checks, but they are not suitable for public GitHub releases.
+
+## Public Release Installers (.dmg)
+
+Public release builds now require valid Apple signing and notarization credentials. The release build will stop immediately if those credentials are missing so broken installers do not get published by accident.
+
+Required secrets for GitHub Actions:
+
+- `CSC_LINK`
+- `CSC_KEY_PASSWORD`
+- `APPLE_ID`
+- `APPLE_APP_SPECIFIC_PASSWORD`
+- `APPLE_TEAM_ID`
+
+Optional alternative notarization secrets:
+
+- `APPLE_API_KEY`
+- `APPLE_API_KEY_ID`
+- `APPLE_API_ISSUER`
+
+To publish a release:
+
+```bash
+git tag v1.4.2
+git push origin v1.4.2
+```
+
+The GitHub Actions workflow in [.github/workflows/release-macos.yml](/Users/gorenuga/Nextcloud/My%20Apps/mac-cleaner-app/.github/workflows/release-macos.yml) will build both signed DMGs, verify them, generate a checksum file, and attach them to the GitHub release automatically.
+
+Public artifacts are generated in `dist/` with explicit arch names:
 
 - `LumaSweep-<version>-arm64.dmg` (Apple Silicon)
-- `LumaSweep-<version>.dmg` (Intel)
+- `LumaSweep-<version>-x64.dmg` (Intel)
+- `LumaSweep-<version>-SHA256.txt`
 
 ## GitHub Release Flow
 
-```bash
-git tag v1.3.0
-git push origin v1.3.0
-```
-
-Then on GitHub:
-
-1. Open `Releases` and click `Draft a new release`.
-2. Select tag `v1.3.0`.
-3. Upload both DMGs from `dist/`.
-4. Publish.
+Releases should now be created from signed CI output instead of manual local uploads. That avoids the unsigned or malformed DMGs that macOS reports as damaged after download.
 
 ## Publish With Transparency (Code + Installers)
 
@@ -86,11 +114,6 @@ git push origin main
 git tag v1.3.0
 git push origin v1.3.0
 ```
-
-Then upload:
-
-- `dist/LumaSweep-1.3.0-arm64.dmg`
-- `dist/LumaSweep-1.3.0.dmg`
 
 ### If you must store DMGs in git
 
@@ -126,7 +149,8 @@ mac-cleaner-app/
 
 - App blocked by macOS: allow in `Privacy & Security` and relaunch.
 - Browser history cleanup fails: close Safari/Chrome first.
-- Unsigned build warnings are expected for local builds; configure Developer ID for public distribution.
+- Public release builds fail unless signing and notarization credentials are configured.
+- Unsigned local builds may still require a manual override in `Privacy & Security`.
 
 ## License
 

@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented in this file.
 
+## [Unreleased]
+
+- Hardened macOS release packaging so public builds now require real code signing instead of silently shipping unsigned installers.
+- Added separate inherited entitlements for Electron helper processes and added an Apple Events usage description for notarized builds.
+- Added a macOS release workflow that builds signed, notarized DMGs from Git tags and uploads checksum files automatically.
+- Added release verification so DMGs must pass `codesign`, `spctl`, and stapler validation before upload.
+
 ## [1.4.1] - 2026-04-19
 
 - Reworked the app UI to a cleaner utility-style layout with a calmer dark palette, flatter panels, and more conventional navigation.
