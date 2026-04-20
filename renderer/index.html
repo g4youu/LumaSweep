@@ -5,416 +5,33 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self';"/>
 <title>LumaSweep</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
-:root{
-  --bg:#0f0a26;--sidebar:#21104a;--card:rgba(27,15,63,0.72);--card2:rgba(45,27,92,0.62);
-  --border:rgba(255,255,255,0.14);--accent:#7f6bff;--accent2:#e548b9;
-  --accent3:#3cc6ff;--danger:#ff5d7d;--text:#efe9ff;
-  --muted:#b7add7;--success:#36d47a;--warn:#f4c84d;
-  --shell-glow-1:rgba(229,72,185,0.28);--shell-glow-2:rgba(86,127,255,0.24);
-}
-html,body{
-  height:100%;overflow:hidden;color:var(--text);
-  background:
-    radial-gradient(1200px 700px at 10% 100%, rgba(229,72,185,0.22), transparent 60%),
-    radial-gradient(1000px 600px at 100% 0%, rgba(86,127,255,0.22), transparent 64%),
-    linear-gradient(150deg,#120a32 0%,#180a3f 45%,#0e1037 100%);
-}
-body{font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif}
-.window-dragbar{
-  position:fixed;top:0;left:0;right:0;height:38px;
-  background:linear-gradient(180deg,rgba(23,14,52,0.96),rgba(16,10,38,0.8));
-  border-bottom:1px solid rgba(255,255,255,0.12);
-  -webkit-app-region:drag;z-index:1000;
-}
-.app{display:flex;height:100vh}
-.sidebar{width:230px;min-width:230px;background:linear-gradient(180deg,rgba(49,26,99,0.92),rgba(31,15,73,0.96));border-right:1px solid rgba(255,255,255,0.12);
-  display:flex;flex-direction:column;padding:0 12px 16px;-webkit-app-region:drag}
-.sidebar *{-webkit-app-region:no-drag}
-.logo{display:flex;align-items:center;gap:10px;padding:44px 12px 18px;border-bottom:1px solid rgba(255,255,255,0.12);margin-bottom:12px}
-.logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--accent),var(--accent2));
-  border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;
-  box-shadow:0 8px 28px rgba(127,107,255,0.5);flex-shrink:0}
-.logo-name{font-size:15px;font-weight:700;letter-spacing:-0.3px}
-.logo-sub{font-size:10px;color:rgba(239,233,255,0.72)}
-.nav-label{font-size:10px;font-weight:700;color:rgba(239,233,255,0.66);letter-spacing:0.9px;text-transform:uppercase;padding:10px 12px 4px}
-.nav-item{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:8px;cursor:pointer;
-  font-size:13.5px;color:rgba(239,233,255,0.78);transition:all 0.13s;border:1px solid transparent;user-select:none}
-.nav-item:hover{color:var(--text);background:rgba(255,255,255,0.1)}
-.nav-item.active{
-  background:linear-gradient(135deg,rgba(127,107,255,0.24),rgba(229,72,185,0.18));
-  border-color:rgba(255,255,255,0.2);color:#fff;font-weight:600;
-  box-shadow:0 6px 20px rgba(40,22,88,0.5);
-}
-.nav-icon{width:18px;text-align:center;font-size:14px}
-.sidebar-footer{margin-top:auto;padding-top:12px;border-top:1px solid rgba(255,255,255,0.12)}
-.status-row{display:flex;align-items:center;gap:6px;padding:8px 12px;font-size:11px;color:rgba(239,233,255,0.75)}
-.dot{width:6px;height:6px;border-radius:50%;background:var(--success);animation:pulse 2s ease infinite;flex-shrink:0}
-.main{flex:1;overflow-y:auto;padding:52px 32px 28px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
-.main::-webkit-scrollbar{width:5px}
-.main::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.18);border-radius:3px}
-.page{display:none;animation:fadeIn 0.2s ease}
-.page.active{display:block}
-.page-header{
-  display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;
-  background:linear-gradient(145deg,rgba(46,28,96,0.7),rgba(32,20,75,0.58));
-  border:1px solid rgba(255,255,255,0.16);border-radius:16px;
-  box-shadow:0 10px 35px rgba(9,6,30,0.45), inset 0 1px 0 rgba(255,255,255,0.08);
-  padding:18px 20px;backdrop-filter:blur(10px);
-}
-.page-title{font-size:28px;font-weight:800;letter-spacing:-0.7px}
-.page-sub{font-size:13px;color:rgba(239,233,255,0.78);margin-top:3px}
-.header-actions{display:flex;gap:8px;align-items:center}
-.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:9px;
-  font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all 0.15s;font-family:inherit;white-space:nowrap}
-.btn:disabled{opacity:0.5;cursor:not-allowed}
-.btn-primary{
-  background:linear-gradient(135deg,var(--accent),var(--accent2));
-  color:#fff;
-  box-shadow:0 8px 22px rgba(90,49,206,0.42);
-}
-.btn-primary:not(:disabled):hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(90,49,206,0.56)}
-.btn-ghost{
-  background:linear-gradient(145deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03));
-  color:var(--text);border:1px solid rgba(255,255,255,0.16)
-}
-.btn-ghost:not(:disabled):hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.24)}
-.btn-danger{background:rgba(239,68,68,0.1);color:var(--danger);border:1px solid rgba(239,68,68,0.2)}
-.btn-danger:not(:disabled):hover{background:rgba(239,68,68,0.18)}
-.btn-sm{padding:6px 12px;font-size:12px;border-radius:7px}
-.card{
-  background:linear-gradient(145deg,rgba(35,21,78,0.75),rgba(24,16,58,0.7));
-  border:1px solid rgba(255,255,255,0.16);
-  border-radius:16px;padding:20px;margin-bottom:16px;
-  box-shadow:0 12px 34px rgba(9,6,30,0.32), inset 0 1px 0 rgba(255,255,255,0.06);
-  backdrop-filter:blur(10px);
-}
-.card:last-child{margin-bottom:0}
-.card-title{font-size:11px;font-weight:700;color:rgba(239,233,255,0.72);text-transform:uppercase;letter-spacing:0.65px;margin-bottom:14px}
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
-.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
-.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px}
-.bar-wrap{height:6px;background:rgba(255,255,255,0.1);border-radius:999px;overflow:hidden}
-.bar-fill{height:100%;border-radius:3px;transition:width 0.7s ease}
-.gauge-wrap{position:relative;display:inline-block}
-.gauge-text{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.gauge-pct{font-size:28px;font-weight:800;letter-spacing:-1px;line-height:1}
-.gauge-label{font-size:10px;color:rgba(239,233,255,0.72);margin-top:2px}
-.app-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.1)}
-.app-row:last-child{border-bottom:none}
-.app-row.selected{background:rgba(127,107,255,0.12);border-radius:10px;padding:11px 10px}
-.app-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
-.app-info{flex:1;min-width:0}
-.app-name{font-size:13.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.app-meta{font-size:11px;color:rgba(239,233,255,0.68);margin-top:2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.app-check{accent-color:var(--accent);transform:translateY(1px)}
-.apps-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-.apps-search{
-  min-width:210px;flex:1;background:var(--card2);color:var(--text);border:1px solid var(--border);
-  border-radius:8px;padding:8px 10px;font-size:12px;outline:none
-}
-.apps-inline-check{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);user-select:none}
-.apps-meta{font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:8px}
-.apps-chip{
-  border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);
-  border-radius:999px;padding:4px 9px;font-size:11px;color:rgba(239,233,255,0.82)
-}
-.tag{display:inline-flex;align-items:center;font-size:11px;font-weight:500;padding:2px 8px;border-radius:20px}
-.toggle{width:38px;height:22px;border-radius:11px;background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.16);
-  cursor:pointer;position:relative;transition:all 0.2s;flex-shrink:0}
-.toggle.on{background:var(--accent);border-color:var(--accent)}
-.toggle::after{content:'';position:absolute;width:16px;height:16px;background:#fff;border-radius:50%;
-  top:2px;left:2px;transition:transform 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.3)}
-.toggle.on::after{transform:translateX(16px)}
-.notice{border-radius:12px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;animation:slideIn 0.25s ease}
-.notice.success{background:rgba(54,212,122,0.12);border:1px solid rgba(54,212,122,0.34)}
-.notice.error{background:rgba(255,93,125,0.12);border:1px solid rgba(255,93,125,0.34)}
-.notice.info{background:rgba(127,107,255,0.14);border:1px solid rgba(127,107,255,0.34)}
-.skel{background:linear-gradient(90deg,rgba(255,255,255,0.08) 25%,rgba(255,255,255,0.2) 50%,rgba(255,255,255,0.08) 75%);
-  background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:6px}
-.action-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
-.action-card{background:linear-gradient(145deg,rgba(255,255,255,0.07),rgba(255,255,255,0.02));border:1px solid rgba(255,255,255,0.16);border-radius:12px;
-  padding:16px 12px;text-align:center;cursor:pointer;transition:all 0.15s;user-select:none}
-.action-card:hover{background:rgba(255,255,255,0.14);border-color:rgba(255,255,255,0.26);transform:translateY(-1px)}
-.action-icon{font-size:24px;margin-bottom:6px}
-.action-label{font-size:11px;font-weight:600;color:rgba(239,233,255,0.76)}
-.smart-hero{
-  display:grid;grid-template-columns:1.2fr 0.8fr;gap:18px;
-  background:
-    radial-gradient(500px 180px at 10% 0%, rgba(255,255,255,0.12), transparent 70%),
-    linear-gradient(125deg,rgba(142,84,233,0.32),rgba(58,109,240,0.28));
-}
-.smart-hero-left{display:flex;flex-direction:column;gap:10px;justify-content:center}
-.smart-chip{
-  display:inline-flex;align-items:center;width:max-content;padding:5px 10px;border-radius:999px;
-  background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.24);
-  font-size:11px;font-weight:600;color:rgba(239,233,255,0.86);letter-spacing:0.3px
-}
-.smart-title{font-size:34px;font-weight:800;line-height:1.05;letter-spacing:-0.9px}
-.smart-subtext{font-size:13px;color:rgba(239,233,255,0.82);max-width:560px}
-.smart-tags{display:flex;flex-wrap:wrap;gap:8px}
-.tag.soft{background:rgba(255,255,255,0.09);color:rgba(239,233,255,0.84);border:1px solid rgba(255,255,255,0.18)}
-.smart-orb-wrap{display:flex;align-items:center;justify-content:center}
-.smart-orb{
-  width:250px;height:250px;border-radius:50%;
-  background:
-    radial-gradient(62% 62% at 35% 25%, rgba(255,255,255,0.32), rgba(255,255,255,0.02) 65%),
-    radial-gradient(70% 70% at 70% 75%, rgba(229,72,185,0.38), transparent 72%),
-    linear-gradient(145deg,rgba(45,35,97,0.94),rgba(17,16,52,0.96));
-  border:1px solid rgba(255,255,255,0.24);
-  box-shadow:0 20px 50px rgba(11,8,41,0.55), inset 0 1px 0 rgba(255,255,255,0.24);
-  display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center
-}
-.smart-orb-label{font-size:12px;color:rgba(239,233,255,0.74);text-transform:uppercase;letter-spacing:0.7px}
-.smart-orb-value{font-size:46px;font-weight:800;letter-spacing:-1px;margin-top:3px}
-.smart-orb-meta{font-size:12px;color:rgba(239,233,255,0.78)}
-.smart-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
-.care-card{
-  border-radius:16px;padding:18px;border:1px solid rgba(255,255,255,0.16);
-  display:flex;flex-direction:column;gap:8px;min-height:172px;
-  box-shadow:0 12px 34px rgba(9,6,30,0.28), inset 0 1px 0 rgba(255,255,255,0.08);
-  backdrop-filter:blur(8px);cursor:pointer;transition:all 0.16s ease
-}
-.care-card:hover{transform:translateY(-2px);border-color:rgba(255,255,255,0.22)}
-.care-card.cleanup{background:linear-gradient(150deg,rgba(31,120,83,0.42),rgba(20,48,52,0.58))}
-.care-card.protection{background:linear-gradient(150deg,rgba(173,53,143,0.38),rgba(56,20,64,0.62))}
-.care-card.performance{background:linear-gradient(150deg,rgba(67,83,209,0.4),rgba(25,26,73,0.64))}
-.care-card.applications{background:linear-gradient(150deg,rgba(61,130,224,0.36),rgba(28,36,95,0.62))}
-.care-card.clutter{background:linear-gradient(150deg,rgba(95,180,172,0.32),rgba(38,44,103,0.64))}
-.care-card.wide{grid-column:span 2}
-.care-kicker{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.65px;color:rgba(239,233,255,0.75)}
-.care-value{font-size:40px;font-weight:800;letter-spacing:-1.1px;line-height:1;color:#fff}
-.care-copy{font-size:12.5px;color:rgba(239,233,255,0.82);margin-bottom:auto}
-.care-card .btn{width:max-content}
-.coming-card{display:flex;align-items:center;gap:14px}
-.coming-card.blue{background:linear-gradient(145deg,rgba(49,121,214,0.3),rgba(19,61,104,0.5))}
-.coming-icon{
-  width:54px;height:54px;border-radius:14px;display:flex;align-items:center;justify-content:center;
-  font-size:30px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.16);flex-shrink:0
-}
-.coming-title{font-size:20px;font-weight:700;letter-spacing:-0.4px}
-.coming-copy{font-size:13px;color:rgba(239,233,255,0.78);margin-top:4px}
-.road-list{display:flex;flex-direction:column;gap:9px}
-.road-row{
-  display:flex;justify-content:space-between;gap:12px;align-items:center;
-  font-size:13px;padding:10px 12px;border:1px solid rgba(255,255,255,0.1);border-radius:10px;
-  background:rgba(255,255,255,0.03)
-}
-.road-row span{color:rgba(239,233,255,0.74)}
-.road-row strong{font-size:12px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase}
-.road-row strong.ready{color:var(--success)}
-.road-row strong.next{color:var(--warn)}
-.road-row strong.plan{color:var(--accent3)}
-.lens-map{
-  min-height:320px;border-radius:14px;border:1px solid rgba(255,255,255,0.12);
-  background:
-    radial-gradient(220px 220px at 26% 38%, rgba(127,107,255,0.36), transparent 72%),
-    radial-gradient(180px 180px at 68% 45%, rgba(229,72,185,0.35), transparent 72%),
-    radial-gradient(140px 140px at 42% 74%, rgba(60,198,255,0.28), transparent 72%),
-    linear-gradient(145deg,rgba(24,16,58,0.78),rgba(18,13,46,0.72));
-  display:flex;align-items:flex-end;justify-content:flex-end;padding:16px
-}
-.lens-map .btn{background:linear-gradient(130deg,var(--accent2),var(--accent));border:0}
-.provider-list{display:flex;flex-direction:column;gap:10px}
-.provider-row{
-  display:grid;grid-template-columns:20px 1fr auto;gap:10px;align-items:center;
-  padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);
-  background:rgba(255,255,255,0.04)
-}
-.provider-row .status{font-size:11px;padding:3px 8px;border-radius:999px;border:1px solid rgba(255,255,255,0.16)}
-.provider-row .status.on{color:var(--success);border-color:rgba(54,212,122,0.35);background:rgba(54,212,122,0.12)}
-.provider-row .status.soon{color:var(--warn);border-color:rgba(244,200,77,0.35);background:rgba(244,200,77,0.1)}
-.provider-row .meta{font-size:12px;color:rgba(239,233,255,0.72)}
-.status-dot{width:10px;height:10px;border-radius:50%;background:var(--success)}
-.status-dot.soon{background:var(--warn)}
-.cloud-hero{
-  display:flex;align-items:center;justify-content:space-between;gap:16px;
-  background:
-    radial-gradient(420px 180px at 12% 0%, rgba(60,198,255,0.2), transparent 72%),
-    linear-gradient(140deg,rgba(29,77,147,0.32),rgba(33,36,92,0.44));
-}
-.cloud-hero-title{font-size:21px;font-weight:800;letter-spacing:-0.5px}
-.cloud-hero-copy{font-size:13px;color:rgba(239,233,255,0.82);margin-top:6px;max-width:740px}
-.cloud-hero-meta{font-size:11px;color:rgba(239,233,255,0.72);margin-top:8px}
-.cloud-provider-list{display:flex;flex-direction:column;gap:10px}
-.cloud-provider{
-  border:1px solid rgba(255,255,255,0.13);
-  border-radius:12px;padding:12px 14px;
-  background:linear-gradient(145deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02));
-}
-.cloud-provider.offline{opacity:0.74}
-.cloud-provider-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.cloud-provider-name{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700;letter-spacing:-0.2px}
-.cloud-provider-icon{
-  width:24px;height:24px;border-radius:7px;display:flex;align-items:center;justify-content:center;
-  background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.14);font-size:13px
-}
-.cloud-badge{
-  font-size:11px;padding:3px 8px;border-radius:999px;
-  border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:var(--muted)
-}
-.cloud-badge.on{color:var(--success);border-color:rgba(54,212,122,0.38);background:rgba(54,212,122,0.12)}
-.cloud-badge.off{color:var(--warn);border-color:rgba(244,200,77,0.38);background:rgba(244,200,77,0.12)}
-.cloud-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
-.cloud-metric{
-  border:1px solid rgba(255,255,255,0.1);border-radius:9px;padding:8px 10px;background:rgba(0,0,0,0.12);
-  display:flex;flex-direction:column;gap:3px
-}
-.cloud-metric span{font-size:11px;color:rgba(239,233,255,0.72)}
-.cloud-metric strong{font-size:13px;font-weight:700;line-height:1.1}
-.cloud-roots{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-.cloud-root{
-  font-size:10px;line-height:1.4;padding:3px 7px;border-radius:999px;
-  background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.14);color:rgba(239,233,255,0.78)
-}
-.cloud-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
-.lens-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-bottom:10px}
-.lens-control{display:flex;flex-direction:column;gap:4px;min-width:130px}
-.lens-control label{font-size:10px;color:rgba(239,233,255,0.7);text-transform:uppercase;letter-spacing:0.55px}
-.lens-control select,.lens-control input{
-  background:var(--card2);color:var(--text);border:1px solid var(--border);
-  border-radius:8px;padding:7px 9px;font-size:12px;outline:none;min-height:33px
-}
-.lens-control input::placeholder{color:rgba(239,233,255,0.45)}
-.lens-toolbar-actions{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
-.lens-toolbar-meta{font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px}
-.lens-chip{
-  border:1px solid rgba(255,255,255,0.12);border-radius:999px;padding:4px 9px;
-  background:rgba(255,255,255,0.06);font-size:11px;color:rgba(239,233,255,0.82)
-}
-.lens-list{display:flex;flex-direction:column;gap:8px;max-height:430px;overflow:auto;padding-right:4px}
-.lens-row{
-  display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center;
-  border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px 12px;background:rgba(255,255,255,0.03)
-}
-.lens-row:hover{background:rgba(255,255,255,0.08)}
-.lens-row.selected{
-  border-color:rgba(127,107,255,0.42);
-  background:linear-gradient(135deg,rgba(127,107,255,0.18),rgba(229,72,185,0.12));
-}
-.lens-check{accent-color:var(--accent);transform:translateY(1px)}
-.lens-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.lens-meta{font-size:11px;color:rgba(239,233,255,0.72);margin-top:3px}
-.lens-pill{font-size:11px;padding:3px 8px;border-radius:999px;border:1px solid rgba(255,255,255,0.18)}
-.lens-pill.dir{color:var(--accent3);background:rgba(60,198,255,0.12)}
-.lens-pill.file{color:#dfd8ff;background:rgba(255,255,255,0.08)}
-.lens-crumbs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
-.lens-crumb{font-size:11px;padding:4px 8px;border-radius:999px;border:1px solid rgba(255,255,255,0.16);background:rgba(255,255,255,0.06);cursor:pointer}
-.lens-crumb:hover{background:rgba(255,255,255,0.12)}
-.lens-bubble-wrap{display:flex;flex-wrap:wrap;gap:12px;align-content:flex-start;min-height:320px}
-.lens-bubble{
-  border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
-  border:1px solid rgba(255,255,255,0.2);
-  background:
-    radial-gradient(68% 68% at 30% 22%, rgba(255,255,255,0.34), rgba(255,255,255,0.04) 68%),
-    linear-gradient(145deg,rgba(127,107,255,0.34),rgba(229,72,185,0.3));
-  box-shadow:0 10px 24px rgba(11,8,41,0.45);
-  cursor:pointer;transition:all 0.14s ease;position:relative;
-}
-.lens-bubble:hover{transform:translateY(-2px);border-color:rgba(255,255,255,0.32)}
-.lens-bubble.selected{
-  border-color:rgba(54,212,122,0.6);
-  box-shadow:0 10px 24px rgba(11,8,41,0.45),0 0 0 2px rgba(54,212,122,0.18) inset;
-}
-.lens-select-badge{
-  position:absolute;top:6px;right:6px;width:20px;height:20px;border-radius:50%;
-  border:1px solid rgba(255,255,255,0.22);background:rgba(16,12,40,0.82);color:var(--text);
-  font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer
-}
-.lens-select-badge.on{background:rgba(54,212,122,0.25);border-color:rgba(54,212,122,0.65);color:#e8fff2}
-.lens-b-name{font-size:11px;font-weight:700;max-width:90%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.lens-b-size{font-size:10px;color:rgba(239,233,255,0.78)}
-.dup-group-list{display:flex;flex-direction:column;gap:8px;max-height:430px;overflow:auto;padding-right:4px}
-.dup-group-item{
-  padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);
-  background:rgba(255,255,255,0.03);cursor:pointer;transition:all 0.14s ease
-}
-.dup-group-item:hover{background:rgba(255,255,255,0.08)}
-.dup-group-item.active{
-  border-color:rgba(127,107,255,0.5);
-  background:linear-gradient(135deg,rgba(127,107,255,0.2),rgba(229,72,185,0.14));
-}
-.dup-group-top{display:flex;justify-content:space-between;gap:8px;align-items:center}
-.dup-group-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dup-group-meta{font-size:11px;color:rgba(239,233,255,0.75);margin-top:4px}
-.dup-detail-list{display:flex;flex-direction:column;gap:8px}
-.dup-file-row{
-  display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:start;
-  padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);
-  background:rgba(255,255,255,0.03)
-}
-.dup-file-row.keep{border-color:rgba(54,212,122,0.34);background:rgba(54,212,122,0.08)}
-.dup-file-main{min-width:0}
-.dup-file-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dup-file-meta{font-size:11px;color:rgba(239,233,255,0.72);margin-top:3px;word-break:break-all}
-.dup-actions{display:flex;gap:8px;margin-top:12px}
-.dup-empty{padding:28px 12px;text-align:center;color:var(--muted)}
-input.dup-check{accent-color:var(--accent);transform:translateY(2px)}
-.clutter-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
-.clutter-control{display:flex;flex-direction:column;gap:4px;min-width:150px}
-.clutter-control label{font-size:10px;color:rgba(239,233,255,0.7);text-transform:uppercase;letter-spacing:0.55px}
-.clutter-control select,.clutter-control input{
-  background:var(--card2);color:var(--text);border:1px solid var(--border);
-  border-radius:8px;padding:7px 9px;font-size:12px;outline:none;min-height:33px
-}
-.clutter-control input::placeholder{color:rgba(239,233,255,0.45)}
-.clutter-toolbar-actions{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
-.clutter-toolbar-meta{font-size:12px;color:var(--muted);margin-top:10px;display:flex;flex-wrap:wrap;gap:7px}
-.clutter-chip{
-  border:1px solid rgba(255,255,255,0.12);border-radius:999px;padding:4px 9px;
-  background:rgba(255,255,255,0.06);font-size:11px;color:rgba(239,233,255,0.82)
-}
-@media (max-width: 1300px){
-  .smart-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-}
-@media (max-width: 1120px){
-  .smart-hero{grid-template-columns:1fr}
-  .smart-orb{width:210px;height:210px}
-  .smart-title{font-size:28px}
-  .grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}
-}
-@media (max-width: 940px){
-  .grid-2,.grid-3,.grid-4,.smart-grid{grid-template-columns:1fr}
-  .care-card.wide{grid-column:span 1}
-  .sidebar{width:210px;min-width:210px}
-  .cloud-hero{flex-direction:column;align-items:flex-start}
-  .cloud-metrics{grid-template-columns:1fr}
-  .clutter-toolbar-actions{margin-left:0}
-  .lens-toolbar-actions{margin-left:0}
-  .lens-row{grid-template-columns:auto 1fr auto}
-}
-@keyframes spin{to{transform:rotate(360deg)}}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-@keyframes slideIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-.spin{display:inline-block;animation:spin 1s linear infinite}
-.empty{text-align:center;padding:40px;color:var(--muted)}
-.monospace{font-family:'SF Mono',Menlo,monospace;font-size:12px}
-</style>
+<link rel="stylesheet" href="./styles.css"/>
 </head>
 <body>
-<div class="window-dragbar"></div>
+<div class="window-dragbar">
+  <div class="window-actions">
+    <button class="window-btn" onclick="quitApp()">Quit</button>
+  </div>
+</div>
 <div class="app">
   <div class="sidebar">
     <div class="logo">
       <div class="logo-icon">✦</div>
       <div><div class="logo-name">LumaSweep</div><div class="logo-sub">System Utility</div></div>
     </div>
-    <div class="nav-label">Smart Suite</div>
-    <div class="nav-item active" data-page="smart-care"><span class="nav-icon">🖥️</span>Pulse Hub</div>
-    <div class="nav-item" data-page="dashboard"><span class="nav-icon">⚡</span>Overview</div>
-    <div class="nav-item" data-page="cpu"><span class="nav-icon">🧮</span>CPU Scope</div>
-    <div class="nav-item" data-page="ram"><span class="nav-icon">🧠</span>Memory Refresh</div>
-    <div class="nav-item" data-page="disk"><span class="nav-icon">💾</span>Storage Sweep</div>
-    <div class="nav-item" data-page="uninstall"><span class="nav-icon">📦</span>App Manager</div>
-    <div class="nav-item" data-page="startup"><span class="nav-icon">🚀</span>Launch Control</div>
-    <div class="nav-item" data-page="privacy"><span class="nav-icon">🔒</span>Shield</div>
-    <div class="nav-item" data-page="safety"><span class="nav-icon">🧯</span>Safety Center</div>
-    <div class="nav-item" data-page="clutter"><span class="nav-icon">🧬</span>Clutter Finder</div>
-    <div class="nav-item" data-page="cloud"><span class="nav-icon">☁️</span>Cloud Trim</div>
-    <div class="nav-item" data-page="lens"><span class="nav-icon">🔎</span>Space Atlas</div>
+    <div class="nav-label">Tools</div>
+    <div class="nav-item active" data-page="smart-care"><span class="nav-icon">🖥️</span>Overview</div>
+    <div class="nav-item" data-page="dashboard"><span class="nav-icon">⚡</span>System</div>
+    <div class="nav-item" data-page="cpu"><span class="nav-icon">🧮</span>CPU</div>
+    <div class="nav-item" data-page="ram"><span class="nav-icon">🧠</span>Memory</div>
+    <div class="nav-item" data-page="disk"><span class="nav-icon">💾</span>Storage</div>
+    <div class="nav-item" data-page="uninstall"><span class="nav-icon">📦</span>Applications</div>
+    <div class="nav-item" data-page="startup"><span class="nav-icon">🚀</span>Startup</div>
+    <div class="nav-item" data-page="privacy"><span class="nav-icon">🔒</span>Protection</div>
+    <div class="nav-item" data-page="safety"><span class="nav-icon">🧯</span>History</div>
+    <div class="nav-item" data-page="clutter"><span class="nav-icon">🧬</span>Duplicates</div>
+    <div class="nav-item" data-page="cloud"><span class="nav-icon">☁️</span>Cloud</div>
+    <div class="nav-item" data-page="lens"><span class="nav-icon">🔎</span>Space</div>
     <div class="sidebar-footer">
       <div class="status-row"><div class="dot"></div>System monitoring active <span onclick="refreshActivePage()" style="margin-left:auto;cursor:pointer;color:var(--muted);opacity:0.75">↻ Refresh</span></div>
       <div style="padding:0 12px 8px">
@@ -426,7 +43,7 @@ input.dup-check{accent-color:var(--accent);transform:translateY(2px)}
           <option value="power-saver">Power Saver</option>
         </select>
       </div>
-      <div id="app-version" style="padding:0 12px;font-size:10px;color:#2a2a40">LumaSweep</div>
+      <div id="app-version" style="padding:0 12px;font-size:10px;color:var(--muted)">LumaSweep</div>
     </div>
   </div>
   <div class="main">
@@ -434,63 +51,87 @@ input.dup-check{accent-color:var(--accent);transform:translateY(2px)}
     <!-- PULSE HUB -->
     <div class="page active" id="page-smart-care">
       <div class="page-header">
-        <div><div class="page-title">Pulse Hub</div><div class="page-sub" id="smart-sub">Loading system profile…</div></div>
+        <div><div class="page-title">Overview</div><div class="page-sub" id="smart-sub">Loading system profile…</div></div>
         <div class="header-actions">
-          <button class="btn btn-ghost btn-sm" onclick="nav('dashboard')">Open Overview</button>
-          <button class="btn btn-primary" id="smart-scan-btn" onclick="runScan()">⟳ Run Pulse Hub</button>
+          <button class="btn btn-ghost btn-sm" onclick="nav('dashboard')">Open System View</button>
+          <button class="btn btn-primary" id="smart-scan-btn" onclick="runScan()">⟳ Refresh Overview</button>
         </div>
       </div>
       <div id="smart-notice"></div>
-      <div class="card smart-hero">
-        <div class="smart-hero-left">
-          <div class="smart-chip">Mac Health Engine</div>
-          <div class="smart-title">Give your Mac smart care</div>
-          <div class="smart-subtext">Real-time insights plus guided cleanup. Start with one scan, then run tools by category.</div>
-          <div class="smart-tags">
-            <span class="tag soft">Real-time monitoring</span>
-            <span class="tag soft">Safe cleanup paths</span>
-            <span class="tag soft">No background daemons</span>
+      <div class="summary-grid">
+        <div class="summary-card">
+          <div class="summary-label">Health score</div>
+          <div class="summary-value" id="smart-score">--</div>
+          <div class="summary-note" id="smart-score-note">Analyzing system state…</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">Storage in use</div>
+          <div class="summary-value" id="care-cleanup">--</div>
+          <div class="summary-note">Open Storage for cleanup candidates.</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">Open issues</div>
+          <div class="summary-value" id="care-protection">--</div>
+          <div class="summary-note">Protection findings and privacy traces.</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">Process load</div>
+          <div class="summary-value" id="care-performance">--</div>
+          <div class="summary-note">Highest of current CPU and memory usage.</div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Recommended actions</div>
+          <div id="smart-actions-list" class="smart-actions-list">
+            <div class="skel" style="height:62px;border-radius:10px"></div>
+            <div class="skel" style="height:62px;border-radius:10px"></div>
+            <div class="skel" style="height:62px;border-radius:10px"></div>
+          </div>
+          <div class="smart-actions-toolbar">
+            <div id="smart-actions-meta" class="smart-actions-meta">Analyzing recommended actions…</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-primary btn-sm" id="smart-priority-btn" onclick="runSmartPriority()">Run next action</button>
+              <button class="btn btn-ghost btn-sm" onclick="nav('safety')">Open History</button>
+            </div>
           </div>
         </div>
-        <div class="smart-orb-wrap">
-          <div id="smart-orb" class="smart-orb">
-            <div class="smart-orb-label">System Health</div>
-            <div class="smart-orb-value">--</div>
-            <div class="smart-orb-meta">Analyzing…</div>
+        <div class="card">
+          <div class="card-title">Module shortcuts</div>
+          <div class="smart-grid" id="smart-grid">
+            <div class="care-card cleanup" onclick="nav('disk')">
+              <div class="care-kicker">Storage</div>
+              <div class="care-value" id="care-storage">--</div>
+              <div class="care-copy">Review caches, logs, trash, and build data.</div>
+              <button class="btn btn-ghost btn-sm">Open Storage</button>
+            </div>
+            <div class="care-card protection" onclick="nav('privacy')">
+              <div class="care-kicker">Protection</div>
+              <div class="care-value" id="care-shield">--</div>
+              <div class="care-copy">Check startup risk, unsigned apps, and traces.</div>
+              <button class="btn btn-ghost btn-sm">Open Protection</button>
+            </div>
+            <div class="care-card applications" onclick="nav('uninstall')">
+              <div class="care-kicker">Applications</div>
+              <div class="care-value" id="care-apps">--</div>
+              <div class="care-copy">Find large apps and leftover files faster.</div>
+              <button class="btn btn-ghost btn-sm">Open Applications</button>
+            </div>
+            <div class="care-card clutter" onclick="nav('clutter')">
+              <div class="care-kicker">Duplicates</div>
+              <div class="care-value" id="care-clutter">Scan Ready</div>
+              <div class="care-copy">Scan common folders and review matches in one place.</div>
+              <button class="btn btn-ghost btn-sm">Open Duplicates</button>
+            </div>
           </div>
         </div>
       </div>
-
-      <div class="smart-grid" id="smart-grid">
-        <div class="care-card cleanup" onclick="nav('disk')">
-          <div class="care-kicker">Cleanup</div>
-          <div class="care-value" id="care-cleanup">--</div>
-          <div class="care-copy">Junk candidates to review</div>
-          <button class="btn btn-ghost btn-sm">Review</button>
-        </div>
-        <div class="care-card protection" onclick="nav('privacy')">
-          <div class="care-kicker">Shield</div>
-          <div class="care-value" id="care-protection">--</div>
-          <div class="care-copy">Privacy traces available to clear</div>
-          <button class="btn btn-ghost btn-sm">Review</button>
-        </div>
-        <div class="care-card performance" onclick="nav('cpu')">
-          <div class="care-kicker">Launch Control</div>
-          <div class="care-value" id="care-performance">--</div>
-          <div class="care-copy">Current CPU + RAM load</div>
-          <button class="btn btn-ghost btn-sm">Review</button>
-        </div>
-        <div class="care-card applications wide" onclick="nav('uninstall')">
-          <div class="care-kicker">App Manager</div>
-          <div class="care-value" id="care-apps">--</div>
-          <div class="care-copy">Installed apps ready for review and uninstall cleanup</div>
-          <button class="btn btn-ghost btn-sm">Review</button>
-        </div>
-        <div class="care-card clutter wide" onclick="nav('clutter')">
-          <div class="care-kicker">Clutter Finder</div>
-          <div class="care-value" id="care-clutter">Scan Ready</div>
-          <div class="care-copy">Duplicate finder with keep-rule and filtered bulk cleanup</div>
-          <button class="btn btn-ghost btn-sm">Review</button>
+      <div class="card">
+        <div class="card-title">Current scan state</div>
+        <div class="apps-meta">
+          <span class="apps-chip">App index: <span id="care-apps-inline">--</span></span>
+          <span class="apps-chip">Duplicate scan: <span id="care-clutter-inline">Scan Ready</span></span>
+          <span class="apps-chip">Protection: <span id="care-shield-inline">--</span></span>
         </div>
       </div>
     </div>
@@ -498,7 +139,7 @@ input.dup-check{accent-color:var(--accent);transform:translateY(2px)}
     <!-- DASHBOARD -->
     <div class="page" id="page-dashboard">
       <div class="page-header">
-        <div><div class="page-title">System Deck</div><div class="page-sub" id="dash-sub">Loading…</div></div>
+        <div><div class="page-title">System</div><div class="page-sub" id="dash-sub">Loading…</div></div>
         <div class="header-actions">
           <button class="btn btn-primary" id="scan-btn" onclick="runScan()">⟳ Health Scan</button>
         </div>
@@ -517,9 +158,9 @@ input.dup-check{accent-color:var(--accent);transform:translateY(2px)}
       <div class="card">
         <div class="card-title">Quick Actions</div>
         <div class="action-grid">
-          <div class="action-card" onclick="nav('cpu')"><div class="action-icon">🧮</div><div class="action-label">CPU Scope</div></div>
+          <div class="action-card" onclick="nav('cpu')"><div class="action-icon">🧮</div><div class="action-label">CPU</div></div>
           <div class="action-card" onclick="nav('ram')"><div class="action-icon">⚡</div><div class="action-label">Clean RAM</div></div>
-          <div class="action-card" onclick="nav('disk')"><div class="action-icon">🗑️</div><div class="action-label">Storage Sweep</div></div>
+          <div class="action-card" onclick="nav('disk')"><div class="action-icon">🗑️</div><div class="action-label">Storage</div></div>
           <div class="action-card" onclick="nav('uninstall')"><div class="action-icon">📦</div><div class="action-label">Uninstall Apps</div></div>
           <div class="action-card" onclick="nav('startup')"><div class="action-icon">🚀</div><div class="action-label">Startup Items</div></div>
           <div class="action-card" onclick="nav('privacy')"><div class="action-icon">🔒</div><div class="action-label">Privacy</div></div>
@@ -530,7 +171,7 @@ input.dup-check{accent-color:var(--accent);transform:translateY(2px)}
     <!-- CPU -->
     <div class="page" id="page-cpu">
       <div class="page-header">
-        <div><div class="page-title">CPU Scope</div><div class="page-sub">Live processor usage and top CPU processes</div></div>
+        <div><div class="page-title">CPU</div><div class="page-sub">Current processor load and busiest processes</div></div>
         <div class="header-actions">
           <button class="btn btn-ghost btn-sm" onclick="loadCPU()">↻ Refresh</button>
           <button class="btn btn-ghost btn-sm" onclick="openActivityMonitor()">📊 Activity Monitor</button>
@@ -554,8 +195,11 @@ input.dup-check{accent-color:var(--accent);transform:translateY(2px)}
     <!-- RAM -->
     <div class="page" id="page-ram">
       <div class="page-header">
-        <div><div class="page-title">Memory Refresh</div><div class="page-sub">Free up inactive memory for better performance</div></div>
-        <div class="header-actions"><button class="btn btn-ghost btn-sm" onclick="loadRAM()">↻ Refresh</button></div>
+        <div><div class="page-title">Memory</div><div class="page-sub">Pressure, memory breakdown, and safe cleanup actions</div></div>
+        <div class="header-actions">
+          <button class="btn btn-ghost btn-sm" id="authorize-ram-top-btn" onclick="authorizeRamCleanup()">🔐 Unlock RAM Cleanup</button>
+          <button class="btn btn-ghost btn-sm" onclick="loadRAM()">↻ Refresh</button>
+        </div>
       </div>
       <div id="ram-notice"></div>
       <div class="grid-2">
@@ -563,8 +207,9 @@ input.dup-check{accent-color:var(--accent);transform:translateY(2px)}
           <div id="ram-gauge" style="display:flex;justify-content:center;margin-bottom:14px"><div class="skel" style="width:150px;height:150px;border-radius:50%"></div></div>
           <div id="ram-gauge-sub" style="font-size:13px;color:var(--muted);margin-bottom:16px">Loading…</div>
           <button class="btn btn-primary" id="free-ram-btn" onclick="freeRAM()" style="width:100%;justify-content:center">⚡ Free Inactive RAM</button>
+          <button class="btn btn-ghost" id="authorize-ram-btn" onclick="authorizeRamCleanup()" style="width:100%;justify-content:center;margin-top:8px">🔐 Unlock RAM Cleanup</button>
           <button class="btn btn-ghost" id="deep-ram-btn" onclick="deepCleanRAM()" style="width:100%;justify-content:center;margin-top:8px">🧹 Deep Clean RAM (Safe)</button>
-          <div style="font-size:11px;color:var(--muted);margin-top:10px">Uses <code>purge</code> — may ask once per session for admin access</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:10px">Free RAM will not show a password dialog. Unlock once, then cleanup runs silently until the macOS sudo session expires.</div>
         </div>
         <div class="card"><div class="card-title">Memory Breakdown</div><div id="ram-breakdown"><div class="skel" style="height:200px;border-radius:8px"></div></div></div>
       </div>
@@ -574,7 +219,7 @@ input.dup-check{accent-color:var(--accent);transform:translateY(2px)}
     <!-- DISK -->
     <div class="page" id="page-disk">
       <div class="page-header">
-        <div><div class="page-title">Storage Sweep</div><div class="page-sub">Remove junk files, caches, and temporary data</div></div>
+        <div><div class="page-title">Storage</div><div class="page-sub">Review common cleanup areas before removing anything</div></div>
         <div class="header-actions"><button class="btn btn-ghost btn-sm" onclick="loadDisk()">↻ Rescan</button></div>
       </div>
       <div id="disk-notice"></div>
@@ -589,7 +234,7 @@ input.dup-check{accent-color:var(--accent);transform:translateY(2px)}
     <!-- UNINSTALL -->
     <div class="page" id="page-uninstall">
       <div class="page-header">
-        <div><div class="page-title">App Manager</div><div class="page-sub">Completely remove apps and all leftover files</div></div>
+        <div><div class="page-title">Applications</div><div class="page-sub">Inspect installed apps, leftovers, and uninstall previews</div></div>
         <div class="header-actions">
           <button class="btn btn-ghost btn-sm" onclick="clearAppSelection()">Clear Selection</button>
           <button class="btn btn-ghost btn-sm" onclick="loadApps()">↻ Rescan</button>
@@ -616,7 +261,7 @@ input.dup-check{accent-color:var(--accent);transform:translateY(2px)}
     <!-- STARTUP -->
     <div class="page" id="page-startup">
       <div class="page-header">
-        <div><div class="page-title">Startup Items</div><div class="page-sub">Control what launches when your Mac starts</div></div>
+        <div><div class="page-title">Startup</div><div class="page-sub">Control what launches when your Mac starts</div></div>
         <div class="header-actions"><button class="btn btn-ghost btn-sm" onclick="loadStartup()">↻ Refresh</button></div>
       </div>
       <div id="startup-notice"></div>
@@ -630,15 +275,15 @@ input.dup-check{accent-color:var(--accent);transform:translateY(2px)}
     <!-- PRIVACY -->
     <div class="page" id="page-privacy">
       <div class="page-header">
-        <div><div class="page-title">Shield Center</div><div class="page-sub">Threat checks, startup hardening, and privacy trace cleanup</div></div>
+        <div><div class="page-title">Protection</div><div class="page-sub">Threat checks, startup hardening, and privacy trace cleanup</div></div>
         <div class="header-actions">
-          <button class="btn btn-ghost btn-sm" onclick="loadProtection(true)">↻ Scan Shield</button>
+          <button class="btn btn-ghost btn-sm" onclick="loadProtection(true)">↻ Scan Protection</button>
           <button class="btn btn-primary" onclick="clearAllPrivacy()">🧹 Clear Privacy Traces</button>
         </div>
       </div>
       <div id="privacy-notice"></div>
       <div class="grid-4">
-        <div class="card"><div class="card-title">Shield Score</div><div id="protection-score" style="font-size:34px;font-weight:800;line-height:1.1">—</div><div id="protection-status" style="font-size:12px;color:var(--muted);margin-top:6px">Not scanned</div></div>
+        <div class="card"><div class="card-title">Protection score</div><div id="protection-score" style="font-size:34px;font-weight:800;line-height:1.1">—</div><div id="protection-status" style="font-size:12px;color:var(--muted);margin-top:6px">Not scanned</div></div>
         <div class="card"><div class="card-title">Critical</div><div id="protection-critical" style="font-size:34px;font-weight:800;color:var(--danger);line-height:1.1">—</div><div style="font-size:12px;color:var(--muted);margin-top:6px">Immediate attention</div></div>
         <div class="card"><div class="card-title">Warnings</div><div id="protection-warning" style="font-size:34px;font-weight:800;color:var(--warn);line-height:1.1">—</div><div style="font-size:12px;color:var(--muted);margin-top:6px">Review recommended</div></div>
         <div class="card"><div class="card-title">New Since Last Scan</div><div id="protection-new" style="font-size:34px;font-weight:800;color:var(--accent3);line-height:1.1">—</div><div id="protection-last" style="font-size:12px;color:var(--muted);margin-top:6px">Baseline not available</div></div>
@@ -650,7 +295,7 @@ input.dup-check{accent-color:var(--accent);transform:translateY(2px)}
     <!-- CLUTTER -->
     <div class="page" id="page-clutter">
       <div class="page-header">
-        <div><div class="page-title">Clutter Finder</div><div class="page-sub">Find duplicates and remove large unnecessary files</div></div>
+        <div><div class="page-title">Duplicates</div><div class="page-sub">Scan common folders and remove exact duplicate files safely</div></div>
         <div class="header-actions">
           <button class="btn btn-ghost btn-sm" onclick="resetDuplicateResults()">Reset</button>
           <button class="btn btn-primary" id="clutter-scan-btn" onclick="scanDuplicates()">🔎 Scan Duplicates</button>
@@ -733,7 +378,7 @@ input.dup-check{accent-color:var(--accent);transform:translateY(2px)}
     <!-- CLOUD -->
     <div class="page" id="page-cloud">
       <div class="page-header">
-        <div><div class="page-title">Cloud Trim</div><div class="page-sub">Analyze local sync data and remove stale cache files safely</div></div>
+        <div><div class="page-title">Cloud</div><div class="page-sub">Analyze local sync data and remove stale cache files safely</div></div>
         <div class="header-actions">
           <label for="cloud-stale-days" style="font-size:11px;color:var(--muted)">Stale age</label>
           <select id="cloud-stale-days" onchange="setCloudStaleDays(this.value)" style="background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-size:12px;outline:none">
@@ -755,11 +400,11 @@ input.dup-check{accent-color:var(--accent);transform:translateY(2px)}
       </div>
       <div class="card cloud-hero">
         <div>
-          <div class="cloud-hero-title">Safe cache cleanup only</div>
-          <div class="cloud-hero-copy">LumaSweep scans provider cache paths, selects older stale files, and moves them to Trash. Your synced files remain untouched.</div>
+          <div class="cloud-hero-title">Cache cleanup only</div>
+          <div class="cloud-hero-copy">This scan only targets local provider cache paths. Synced documents stay untouched.</div>
           <div id="cloud-hero-meta" class="cloud-hero-meta">Choose stale age and run a scan.</div>
         </div>
-        <button class="btn btn-primary" id="cloud-clean-all-btn" onclick="cleanAllCloudCaches()">🧹 Clean All Stale Cache</button>
+        <button class="btn btn-primary" id="cloud-clean-all-btn" onclick="cleanAllCloudCaches()">🧹 Clean stale cache</button>
       </div>
       <div class="card"><div class="card-title">Provider Status</div><div id="cloud-providers"></div></div>
     </div>
@@ -767,7 +412,7 @@ input.dup-check{accent-color:var(--accent);transform:translateY(2px)}
     <!-- SPACE LENS -->
     <div class="page" id="page-lens">
       <div class="page-header">
-        <div><div class="page-title">Space Atlas</div><div class="page-sub">Interactive storage map for top folders and large files</div></div>
+        <div><div class="page-title">Space</div><div class="page-sub">Browse large folders and files, then send selected items to Trash</div></div>
         <div class="header-actions">
           <button class="btn btn-ghost btn-sm" onclick="lensGoHome()">Home</button>
           <button class="btn btn-ghost btn-sm" onclick="lensGoUp()" id="lens-up-btn">Up</button>
@@ -800,14 +445,14 @@ input.dup-check{accent-color:var(--accent);transform:translateY(2px)}
           <div id="lens-toolbar-meta" class="lens-toolbar-meta"></div>
           <div id="lens-sources"></div>
         </div>
-        <div class="card"><div class="card-title">Visual Treemap</div><div id="lens-map"></div></div>
+        <div class="card"><div class="card-title">Size breakdown</div><div id="lens-map"></div></div>
       </div>
     </div>
 
     <!-- SAFETY -->
     <div class="page" id="page-safety">
       <div class="page-header">
-        <div><div class="page-title">Safety Center</div><div class="page-sub">Dry-run previews, cleanup history, and one-click restore from Trash</div></div>
+        <div><div class="page-title">History</div><div class="page-sub">Dry-run previews, cleanup history, and one-click restore from Trash</div></div>
         <div class="header-actions">
           <button class="btn btn-ghost btn-sm" onclick="clearSafetyHistory()">Clear History</button>
           <button class="btn btn-ghost btn-sm" onclick="loadSafety(true)">↻ Refresh</button>
@@ -882,7 +527,7 @@ input.dup-check{accent-color:var(--accent);transform:translateY(2px)}
 'use strict';
 // Safety check - if api is missing, show an error
 if (!window.api) {
-  document.querySelector('.main').innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:16px;color:#e8e8f0"><div style="font-size:48px">⚠️</div><div style="font-size:20px;font-weight:700">Preload bridge not found</div><div style="font-size:14px;color:#6b6b80;text-align:center;max-width:400px">The app could not connect to system APIs. Please restart with: <code style="background:#16161f;padding:4px 8px;border-radius:6px;color:#5b8af5">npm start</code></div></div>';
+  document.querySelector('.main').innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:16px;color:var(--text)"><div style="font-size:48px">⚠️</div><div style="font-size:20px;font-weight:700">Preload bridge not found</div><div style="font-size:14px;color:var(--muted);text-align:center;max-width:400px">The app could not connect to system APIs. Please restart with: <code style="background:var(--surface);padding:4px 8px;border-radius:6px;color:var(--accent3)">npm start</code></div></div>';
   throw new Error('window.api is undefined — preload.js may not have loaded');
 }
 const bridge = window.api;
@@ -921,6 +566,23 @@ function fmt(b){
   if(b<1073741824) return (b/1048576).toFixed(1)+' MB';
   return (b/1073741824).toFixed(2)+' GB';
 }
+function ramAuthHelpText(){
+  return 'macOS requires administrator permission for the purge command. Click Unlock RAM Cleanup once, then Free RAM will run silently until that authorization expires.';
+}
+function autoCareReasonText(reason){
+  if(reason==='requires-authorization') return 'authorization needed';
+  if(reason==='pressure-below-threshold') return 'pressure below threshold';
+  if(reason==='inactive-below-threshold') return 'inactive memory below threshold';
+  if(reason==='on-battery') return 'running on battery';
+  if(reason==='disabled') return 'scheduler disabled';
+  if(reason==='suspended') return 'Mac is asleep';
+  if(reason==='already-running') return 'already running';
+  return String(reason||'conditions not met');
+}
+function cap(value){
+  var s=String(value||'');
+  return s?s.charAt(0).toUpperCase()+s.slice(1):'';
+}
 function rC(p){return p>85?'var(--danger)':p>65?'var(--warn)':'var(--success)';}
 function cC(p){return p>80?'var(--danger)':p>50?'var(--warn)':'var(--success)';}
 function cL(p){return p>80?'High':p>50?'Moderate':'Healthy';}
@@ -929,19 +591,48 @@ function iC(i){return i==='High'?'var(--danger)':i==='Medium'?'var(--warn)':'var
 function pC(level){return level==='critical'?'var(--danger)':level==='warning'?'var(--warn)':'var(--success)';}
 function pL(level){return level==='critical'?'Critical':level==='warning'?'Warning':'Normal';}
 function gauge(pct,color,label,size){
-  size=size||150;
-  const r=58,cx=size/2,cy=size/2,circ=2*Math.PI*r,off=circ-(pct/100)*circ;
-  return '<div class="gauge-wrap" style="width:'+size+'px;height:'+size+'px">'+
-    '<svg width="'+size+'" height="'+size+'" style="transform:rotate(-90deg)">'+
-    '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="10"/>'+
-    '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+color+'" stroke-width="10" stroke-dasharray="'+circ+'" stroke-dashoffset="'+off+'" stroke-linecap="round" style="transition:stroke-dashoffset 1s ease;filter:drop-shadow(0 0 8px '+color+'60)"/>'+
-    '</svg><div class="gauge-text"><div class="gauge-pct" style="color:'+color+'">'+pct+'%</div><div class="gauge-label">'+label+'</div></div></div>';
+  return '<div class="meter-card">'+
+    '<div class="meter-header"><span class="meter-label">'+label+'</span><strong class="meter-value" style="color:'+color+'">'+pct+'%</strong></div>'+
+    '<div class="meter-track"><div class="meter-fill" style="width:'+Math.max(0,Math.min(100,pct))+'%;background:'+color+'"></div></div>'+
+  '</div>';
 }
 function notice(elId,type,icon,title,sub){
   var el=document.getElementById(elId);
   if(!el) return;
   var c=type==='success'?'var(--success)':type==='error'?'var(--danger)':'var(--accent)';
   el.innerHTML='<div class="notice '+type+'"><div style="font-size:22px;flex-shrink:0">'+icon+'</div><div><div style="font-size:14px;font-weight:600;color:'+c+'">'+title+'</div>'+(sub?'<div style="font-size:12px;color:var(--muted);margin-top:2px">'+sub+'</div>':'')+'</div><button class="btn btn-ghost btn-sm" style="margin-left:auto;padding:4px 8px" onclick="this.closest(\'.notice\').remove()">✕</button></div>';
+}
+async function quitApp(){
+  try{
+    await bridge.quitApp();
+  }catch(e){
+    notice(activeNoticeTarget(),'error','⚠️','Could not quit app',e.message||'Unknown error');
+  }
+}
+async function authorizeRamCleanup(){
+  var btn=document.getElementById('authorize-ram-btn');
+  var topBtn=document.getElementById('authorize-ram-top-btn');
+  [btn,topBtn].forEach(function(el){
+    if(!el) return;
+    el.disabled=true;
+    el.innerHTML='<span class="spin">⟳</span> Unlocking…';
+  });
+  try{
+    var res=await bridge.authorizeRamCleanup();
+    if(res&&res.success){
+      notice('ram-notice','success','🔐','RAM cleanup unlocked',res.alreadyAuthorized?'RAM cleanup was already authorized for this session.':'Free RAM will now run without showing a password prompt until the macOS sudo session expires.');
+    }else{
+      notice('ram-notice','error','⚠️','Authorization failed',res&&res.error?res.error:'Unknown error');
+    }
+  }catch(e){
+    notice('ram-notice','error','⚠️','Authorization failed',e.message);
+  }finally{
+    [btn,topBtn].forEach(function(el){
+      if(!el) return;
+      el.disabled=false;
+      el.innerHTML='🔐 Unlock RAM Cleanup';
+    });
+  }
 }
 
 var smartAppCountCache = null;
@@ -1013,6 +704,10 @@ var autoCareState = {
   settings: null,
   status: null,
 };
+var smartActionState = {
+  running: false,
+  lastInfo: null,
+};
 
 function estimateHealthScore(info){
   var r=info.ram,d=info.disk,c=info.cpu,pressure=r.pressure||{level:'normal'};
@@ -1047,7 +742,7 @@ function activeNoticeTarget(){
   return 'dash-notice';
 }
 function refreshScanButtons(isBusy){
-  [['scan-btn','⟳ Health Scan'],['smart-scan-btn','⟳ Run Pulse Hub']].forEach(function(pair){
+  [['scan-btn','⟳ Health Scan'],['smart-scan-btn','⟳ Refresh Overview']].forEach(function(pair){
     var btn=document.getElementById(pair[0]);
     if(!btn) return;
     btn.disabled=!!isBusy;
@@ -1063,31 +758,206 @@ async function warmSmartAppsCount(force){
     smartAppCountFetchedAt=now;
   }catch{}
 }
+function smartThreatCount(){
+  if(!(protectionReport.counts&&typeof protectionReport.counts==='object')) return 0;
+  return (protectionReport.counts.critical||0)+(protectionReport.counts.warning||0);
+}
+function smartStateRank(state){
+  if(state==='ready') return 0;
+  if(state==='monitor') return 1;
+  return 2;
+}
+function buildSmartActions(info){
+  var r=info.ram,d=info.disk,c=info.cpu,pressure=r.pressure||{level:'normal'};
+  var inactiveGb=(r.inactive||0)/1073741824;
+  var pressureLevel=pressure.level||'normal';
+  var cloudSummary=cloudState.summary||{};
+  var staleCount=Number(cloudSummary.staleCount||0);
+  var cloudScanned=!!cloudSummary.scannedAt;
+  var threatCount=smartThreatCount();
+  var clutterGroups=clutterScan.groups.length;
+  var autoEnabled=!!(autoCareState.settings&&autoCareState.settings.enabled);
+
+  var actions=[
+    {
+      id:'ram-relief',
+      state:(pressureLevel!=='normal'||r.usedPct>=78)?'ready':'ok',
+      title:(pressureLevel!=='normal'||r.usedPct>=78)?'Free inactive RAM now':'Memory pressure is healthy',
+      sub:'RAM '+r.usedPct+'% used · Pressure '+pL(pressureLevel)+' · Inactive '+inactiveGb.toFixed(2)+' GB',
+      cta:(pressureLevel!=='normal'||r.usedPct>=78)?'Free RAM':'Open Memory',
+      run:async function(){
+        if(pressureLevel!=='normal'||r.usedPct>=78) await freeRAM();
+        else nav('ram');
+      },
+    },
+    {
+      id:'disk-pressure',
+      state:d.pct>=85?'ready':(d.pct>=72?'monitor':'ok'),
+      title:d.pct>=85?'Storage usage is high':'Storage usage under control',
+      sub:'Disk at '+d.pct+'% · '+fmt(d.free)+' free',
+      cta:d.pct>=85?'Open Storage':'View Storage',
+      run:async function(){ nav('disk'); await loadDisk(); },
+    },
+    {
+      id:'cloud-trim',
+      state:staleCount>0?'ready':(cloudScanned?'ok':'monitor'),
+      title:staleCount>0?'Stale cloud cache detected':(cloudScanned?'Cloud cache looks clean':'Cloud cache scan pending'),
+      sub:staleCount>0?(staleCount+' stale files · '+fmt(cloudSummary.staleBytes||0)+' reclaimable'):(
+        cloudScanned?'No stale cloud cache at current threshold':'Run Cloud Trim to discover reclaimable provider cache'
+      ),
+      cta:staleCount>0?'Clean stale cache':'Scan Cloud',
+      run:async function(){
+        nav('cloud');
+        await loadCloud(true);
+        if(staleCount>0 && Number((cloudState.summary&&cloudState.summary.staleCount)||0)>0){
+          await cleanAllCloudCaches();
+        }
+      },
+    },
+    {
+      id:'shield-review',
+      state:threatCount>0?'ready':(protectionReport.scannedAt?'ok':'monitor'),
+      title:threatCount>0?'Protection findings need review':(protectionReport.scannedAt?'Protection scan is clean':'Protection scan recommended'),
+      sub:threatCount>0?(threatCount+' warning/critical finding'+(threatCount===1?'':'s')):(
+        protectionReport.scannedAt?'No warning/critical findings from latest scan':'Scan launch agents and startup entries for risky changes'
+      ),
+      cta:threatCount>0?'Open Protection':'Scan Protection',
+      run:async function(){ nav('privacy'); await loadProtection(true); },
+    },
+    {
+      id:'clutter-review',
+      state:clutterGroups>0?'ready':'monitor',
+      title:clutterGroups>0?'Duplicate groups ready for cleanup':'Duplicate scan available',
+      sub:clutterGroups>0?(clutterGroups+' duplicate groups identified'):(
+        c.pct>72?'Skip scan while CPU is busy':'Scan common folders for duplicates'
+      ),
+      cta:clutterGroups>0?'Review Duplicates':'Run Scan',
+      run:async function(){
+        nav('clutter');
+        if(!clutterGroups && c.pct<=72) await scanDuplicates();
+      },
+    },
+    {
+      id:'auto-care',
+      state:autoEnabled?'ok':'monitor',
+      title:autoEnabled?'Auto Care scheduler enabled':'Auto Care scheduler is off',
+      sub:autoEnabled?'Runs every '+(autoCareState.settings.intervalMinutes||30)+' minutes based on your thresholds':'Enable scheduled maintenance in History',
+      cta:autoEnabled?'Open History':'Configure',
+      run:async function(){ nav('safety'); await loadSafety(false); },
+    },
+  ];
+
+  actions.sort(function(a,b){
+    var rankDiff=smartStateRank(a.state)-smartStateRank(b.state);
+    if(rankDiff!==0) return rankDiff;
+    return a.title.localeCompare(b.title);
+  });
+  return actions;
+}
+function renderSmartActions(info){
+  if(info) smartActionState.lastInfo=info;
+  var currentInfo=smartActionState.lastInfo;
+  var listEl=document.getElementById('smart-actions-list');
+  var metaEl=document.getElementById('smart-actions-meta');
+  var prioBtn=document.getElementById('smart-priority-btn');
+  if(!listEl||!metaEl) return;
+  if(!currentInfo){
+    listEl.innerHTML='<div class="dup-empty">Refresh the overview to generate recommendations.</div>';
+    metaEl.textContent='No recommendations yet.';
+    if(prioBtn) prioBtn.disabled=true;
+    return;
+  }
+  var actions=buildSmartActions(currentInfo);
+  smartActionState.actions=actions;
+  var readyCount=actions.filter(function(a){return a.state==='ready';}).length;
+  var label=readyCount>0
+    ? (readyCount+' priority action'+(readyCount===1?'':'s')+' ready')
+    : 'No urgent actions. Monitoring is healthy.';
+  metaEl.textContent=label;
+  listEl.innerHTML=actions.map(function(action){
+    var isBusy=smartActionState.running;
+    var buttonClass=action.state==='ready'?'btn-primary':'btn-ghost';
+    var badgeText=action.state==='ready'?'Review':(action.state==='monitor'?'Watch':'OK');
+    return '<div class="smart-action-row">'+
+      '<div class="smart-action-main">'+
+        '<div class="smart-action-title">'+escHtml(action.title)+'</div>'+
+        '<div class="smart-action-sub">'+escHtml(action.sub)+'</div>'+
+      '</div>'+
+      '<span class="smart-action-badge '+action.state+'">'+badgeText+'</span>'+
+      '<button class="btn '+buttonClass+' btn-sm" onclick="runSmartAction(\''+escJs(action.id)+'\')" '+(isBusy?'disabled':'')+'>'+(isBusy?'<span class="spin">⟳</span> Working…':escHtml(action.cta))+'</button>'+
+    '</div>';
+  }).join('');
+  if(prioBtn){
+    prioBtn.disabled=smartActionState.running||readyCount<1;
+    prioBtn.innerHTML=smartActionState.running?'<span class="spin">⟳</span> Running…':'Run next action';
+  }
+}
+async function runSmartAction(actionId){
+  if(smartActionState.running) return;
+  var actions=smartActionState.actions||[];
+  var action=actions.find(function(item){return item.id===actionId;});
+  if(!action){
+    notice('smart-notice','error','⚠️','Action unavailable','Refresh the overview and try again.');
+    return;
+  }
+  smartActionState.running=true;
+  renderSmartActions();
+  try{
+    await action.run();
+  }catch(e){
+    notice('smart-notice','error','⚠️','Action failed',e.message||'Unknown error');
+  }finally{
+    smartActionState.running=false;
+    await loadSmartCare();
+  }
+}
+async function runSmartPriority(){
+  var actions=smartActionState.actions||[];
+  var preferred=['ram-relief','cloud-trim','shield-review','disk-pressure','clutter-review','auto-care'];
+  var readyById={};
+  actions.forEach(function(action){if(action.state==='ready') readyById[action.id]=action;});
+  var nextId=preferred.find(function(id){return !!readyById[id];}) || null;
+  if(!nextId){
+    notice('smart-notice','info','ℹ️','No priority actions','The overview did not detect urgent tasks right now.');
+    return;
+  }
+  await runSmartAction(nextId);
+}
 async function loadSmartCare(){
   try{
     var info=await bridge.getSystemInfo();
     var r=info.ram,d=info.disk,c=info.cpu,pressure=r.pressure||{level:'normal'};
     var score=estimateHealthScore(info),scoreColor=healthColor(score),pendingPrivacy=privItems.length-privCleared.size;
-    var threatCount=(protectionReport.counts&&typeof protectionReport.counts==='object')
-      ? ((protectionReport.counts.critical||0)+(protectionReport.counts.warning||0))
-      : 0;
+    var threatCount=smartThreatCount();
     document.getElementById('smart-sub').textContent=info.hostname+' · macOS · '+bridge.arch+' · '+refreshLabel(refreshProfile);
-    var orb=document.getElementById('smart-orb');
-    if(orb){
-      orb.querySelector('.smart-orb-value').textContent=score+'%';
-      orb.querySelector('.smart-orb-value').style.color=scoreColor;
-      orb.querySelector('.smart-orb-meta').textContent=healthLabel(score)+' · RAM pressure '+pL(pressure.level);
+    var scoreEl=document.getElementById('smart-score');
+    var scoreNoteEl=document.getElementById('smart-score-note');
+    if(scoreEl){
+      scoreEl.textContent=score+'%';
+      scoreEl.style.color=scoreColor;
     }
+    if(scoreNoteEl) scoreNoteEl.textContent=healthLabel(score)+' · RAM pressure '+pL(pressure.level);
     document.getElementById('care-cleanup').textContent=d.pct+'%';
     document.getElementById('care-protection').textContent=threatCount>0?threatCount:pendingPrivacy;
     document.getElementById('care-performance').textContent=Math.max(c.pct,r.usedPct)+'%';
-    document.getElementById('care-apps').textContent=smartAppCountCache===null?'Indexing…':smartAppCountCache+' apps';
-    document.getElementById('care-clutter').textContent=clutterScan.groups.length?clutterScan.groups.length+' groups':(clutterScan.inProgress?'Scanning…':'Scan Ready');
+    document.getElementById('care-storage').textContent=d.pct+'%';
+    document.getElementById('care-shield').textContent=threatCount>0?threatCount+' issue'+(threatCount===1?'':'s'):(pendingPrivacy+' trace'+(pendingPrivacy===1?'':'s'));
+    document.getElementById('care-apps').textContent=smartAppCountCache===null?'Indexing…':smartAppCountCache;
+    document.getElementById('care-clutter').textContent=clutterScan.groups.length?clutterScan.groups.length+' groups':(clutterScan.inProgress?'Scanning…':'Scan ready');
+    var inlineApps=document.getElementById('care-apps-inline');
+    var inlineClutter=document.getElementById('care-clutter-inline');
+    var inlineShield=document.getElementById('care-shield-inline');
+    if(inlineApps) inlineApps.textContent=smartAppCountCache===null?'Indexing…':smartAppCountCache+' apps';
+    if(inlineClutter) inlineClutter.textContent=clutterScan.groups.length?clutterScan.groups.length+' groups':(clutterScan.inProgress?'Scanning…':'Scan ready');
+    if(inlineShield) inlineShield.textContent=threatCount>0?threatCount+' issue'+(threatCount===1?'':'s'):'No findings';
+    renderSmartActions(info);
     warmSmartAppsCount(false).then(function(){
       var appsEl=document.getElementById('care-apps');
-      if(appsEl&&smartAppCountCache!==null) appsEl.textContent=smartAppCountCache+' apps';
+      var inlineAppsEl=document.getElementById('care-apps-inline');
+      if(appsEl&&smartAppCountCache!==null) appsEl.textContent=smartAppCountCache;
+      if(inlineAppsEl&&smartAppCountCache!==null) inlineAppsEl.textContent=smartAppCountCache+' apps';
     });
-  }catch(e){notice('smart-notice','error','⚠️','Could not load Pulse Hub',e.message);}
+  }catch(e){notice('smart-notice','error','⚠️','Could not load overview',e.message);}
 }
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
@@ -1105,19 +975,19 @@ async function loadDashboard(){
       '<div class="card-title">RAM Breakdown</div><div style="display:flex;align-items:center;gap:16px">'+
       gauge(r.usedPct,rc,'Used',115)+
       '<div style="flex:1;display:flex;flex-direction:column;gap:7px">'+
-      [{l:'Wired',b:r.wired,c:'#5b8af5'},{l:'Active',b:r.active,c:'var(--warn)'},{l:'Inactive',b:r.inactive,c:'var(--accent2)'},{l:'Free',b:r.free,c:'var(--success)'}]
+      [{l:'Wired',b:r.wired,c:'var(--accent3)'},{l:'Active',b:r.active,c:'var(--warn)'},{l:'Inactive',b:r.inactive,c:'var(--accent2)'},{l:'Free',b:r.free,c:'var(--success)'}]
       .map(m=>'<div><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px"><span style="color:var(--muted)">'+m.l+'</span><span style="font-weight:500">'+fmt(m.b)+'</span></div><div class="bar-wrap" style="height:4px"><div class="bar-fill" style="width:'+Math.round(m.b/r.total*100)+'%;background:'+m.c+'"></div></div></div>').join('')+
-      '<button class="btn btn-ghost btn-sm" onclick="nav(\'ram\')" style="margin-top:4px">⚡ Clean RAM →</button></div></div>';
+      '<button class="btn btn-ghost btn-sm" onclick="nav(\'ram\')" style="margin-top:4px">Open memory</button></div></div>';
     document.getElementById('dash-disk-card').innerHTML=
       '<div class="card-title">Storage</div><div style="font-size:13px;color:var(--muted);margin-bottom:8px">'+fmt(d.free)+' available of '+fmt(d.total)+'</div>'+
-      '<div class="bar-wrap" style="height:10px;border-radius:6px;margin-bottom:14px"><div class="bar-fill" style="width:'+d.pct+'%;background:linear-gradient(90deg,var(--accent),'+dc+');border-radius:6px;height:10px"></div></div>'+
+      '<div class="bar-wrap" style="height:10px;border-radius:6px;margin-bottom:14px"><div class="bar-fill" style="width:'+d.pct+'%;background:'+dc+';border-radius:6px;height:10px"></div></div>'+
       '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px"><span style="color:var(--muted)">Used</span><span style="font-weight:600;color:var(--accent)">'+fmt(d.used)+'</span></div>'+
       '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:14px"><span style="color:var(--muted)">Free</span><span style="font-weight:600;color:var(--success)">'+fmt(d.free)+'</span></div>'+
-      '<button class="btn btn-ghost btn-sm" onclick="nav(\'disk\')" style="width:100%;justify-content:center">🔍 Scan &amp; Clean Disk →</button>';
+      '<button class="btn btn-ghost btn-sm" onclick="nav(\'disk\')" style="width:100%;justify-content:center">Open storage</button>';
   }catch(e){notice('dash-notice','error','⚠️','Could not load system info',e.message);}
 }
 function statCard(title,val,sub,color){
-  return '<div class="card" style="position:relative;overflow:hidden"><div style="position:absolute;top:-20px;right:-20px;width:90px;height:90px;border-radius:50%;background:'+color+'0f"></div><div class="card-title">'+title+'</div><div style="font-size:30px;font-weight:800;color:'+color+';letter-spacing:-1px;margin-bottom:4px">'+val+'</div><div style="font-size:12px;color:var(--muted)">'+sub+'</div></div>';
+  return '<div class="card"><div class="card-title">'+title+'</div><div style="font-size:30px;font-weight:700;color:'+color+';letter-spacing:-0.6px;margin-bottom:4px">'+val+'</div><div style="font-size:12px;color:var(--muted)">'+sub+'</div></div>';
 }
 var scanning=false;
 async function runScan(){
@@ -1127,7 +997,7 @@ async function runScan(){
   await new Promise(r=>setTimeout(r,900));
   refreshScanButtons(false);
   scanning=false;
-  notice('smart-notice','success','✅','Pulse Hub complete','Health score and performance modules are refreshed.');
+  notice('smart-notice','success','✅','Overview refreshed','Health score and action recommendations are up to date.');
   notice('dash-notice','success','✅','Scan complete','Your Mac has been analyzed. Use the tools in the sidebar to clean and optimize.');
 }
 
@@ -1179,10 +1049,10 @@ async function loadRAM(){
       fmt(r.used)+' used of '+fmt(r.total)+
       '<br><span style="font-size:11px;color:'+color+'">Memory Pressure: '+pL(pressure.level)+(pressure.freePct!==null?' ('+pressure.freePct+'% free)':'')+'</span>';
     document.getElementById('ram-breakdown').innerHTML=
-      [{l:'Wired Memory',d:'Reserved by macOS',b:r.wired,c:'#5b8af5'},
+      [{l:'Wired Memory',d:'Reserved by macOS',b:r.wired,c:'var(--accent3)'},
        {l:'Active Memory',d:'Used by apps',b:r.active,c:'var(--warn)'},
        {l:'Inactive Memory',d:'Reclaimable',b:r.inactive,c:'var(--accent2)'},
-       {l:'Compressed',d:'Compressed to save space',b:r.compressed,c:'#f97316'},
+       {l:'Compressed',d:'Compressed to save space',b:r.compressed,c:'var(--accent)'},
        {l:'Free',d:'Immediately available',b:r.free,c:'var(--success)'}]
       .map(m=>'<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px"><div><div style="font-size:13px;font-weight:500">'+m.l+'</div><div style="font-size:11px;color:var(--muted)">'+m.d+'</div></div><span style="font-size:13px;font-weight:600;color:'+m.c+';margin-left:8px">'+fmt(m.b)+'</span></div><div class="bar-wrap"><div class="bar-fill" style="width:'+Math.round(m.b/r.total*100)+'%;background:'+m.c+'"></div></div></div>').join('');
     document.getElementById('ram-processes').innerHTML=procs.length?
@@ -1192,20 +1062,29 @@ async function loadRAM(){
 }
 async function freeRAM(){
   var btn=document.getElementById('free-ram-btn');
-  btn.disabled=true;btn.innerHTML='<span class="spin">⟳</span> Freeing RAM…';
-  var res=await bridge.freeRAM();
-  btn.disabled=false;btn.innerHTML='⚡ Free Inactive RAM';
-  if(res.success){
-    var usedDrop=(res.before&&res.after)?Math.max(0,res.before.used-res.after.used):0;
-    var immediate=res.immediateFreeGainBytes||res.reclaimedBytes||usedDrop;
-    var stabilized=res.stabilizedFreeGainBytes!==undefined?res.stabilizedFreeGainBytes:immediate;
-    var pressureText=(res.beforePressure&&res.stabilizedPressure)?('Pressure: '+pL(res.beforePressure.level)+' → '+pL(res.stabilizedPressure.level)):'';
-    notice('ram-notice','success','✅','RAM cleanup complete','Immediate: '+fmt(immediate)+' · Stabilized (~12s): '+fmt(stabilized)+(pressureText?' · '+pressureText:''));
-    loadRAM();
-    loadSmartCare();
-    loadDashboard();
+  if(btn){btn.disabled=true;btn.innerHTML='<span class="spin">⟳</span> Freeing RAM…';}
+  try{
+    var res=await bridge.freeRAM();
+    if(res&&res.requiresAuthorization){
+      notice('ram-notice','info','🔐','RAM cleanup is locked',ramAuthHelpText());
+      return;
+    }
+    if(res.success){
+      var usedDrop=(res.before&&res.after)?Math.max(0,res.before.used-res.after.used):0;
+      var immediate=res.immediateFreeGainBytes||res.reclaimedBytes||usedDrop;
+      var stabilized=res.stabilizedFreeGainBytes!==undefined?res.stabilizedFreeGainBytes:immediate;
+      var pressureText=(res.beforePressure&&res.stabilizedPressure)?('Pressure: '+pL(res.beforePressure.level)+' → '+pL(res.stabilizedPressure.level)):'';
+      notice('ram-notice','success','✅','RAM cleanup complete','Immediate: '+fmt(immediate)+' · Stabilized (~12s): '+fmt(stabilized)+(pressureText?' · '+pressureText:''));
+      loadRAM();
+      loadSmartCare();
+      loadDashboard();
+    }
+    else notice('ram-notice','error','⚠️','Could not free RAM',res.error||'Try unlocking RAM cleanup first.');
+  }catch(e){
+    notice('ram-notice','error','⚠️','Could not free RAM',e.message||'Unknown error');
+  }finally{
+    if(btn){btn.disabled=false;btn.innerHTML='⚡ Free Inactive RAM';}
   }
-  else notice('ram-notice','error','⚠️','Could not free RAM',res.error||'Try running with admin privileges.');
 }
 
 async function quitRamProcess(pid){
@@ -1232,23 +1111,31 @@ async function deepCleanRAM(){
 
   var btn=document.getElementById('deep-ram-btn');
   if(btn){btn.disabled=true;btn.innerHTML='<span class="spin">⟳</span> Deep Cleaning…';}
-  var res=await bridge.deepCleanRAM(candidates.map(function(p){return p.pid;}));
-  if(btn){btn.disabled=false;btn.innerHTML='🧹 Deep Clean RAM (Safe)';}
+  try{
+    var res=await bridge.deepCleanRAM(candidates.map(function(p){return p.pid;}));
+    if(res&&res.requiresAuthorization){
+      notice('ram-notice','info','🔐','RAM cleanup is locked',ramAuthHelpText());
+      return;
+    }
+    if(!res.success){
+      notice('ram-notice','error','⚠️','Deep clean failed',res.error||'Operation failed');
+      return;
+    }
 
-  if(!res.success){
-    notice('ram-notice','error','⚠️','Deep clean failed',res.error||'Operation failed');
-    return;
+    var usedDrop=(res.before&&res.after)?Math.max(0,res.before.used-res.after.used):0;
+    var immediate=res.immediateFreeGainBytes||res.reclaimedBytes||usedDrop;
+    var stabilized=res.stabilizedFreeGainBytes!==undefined?res.stabilizedFreeGainBytes:immediate;
+    var quitCount=(res.stopped||[]).length;
+    var pressureText=(res.beforePressure&&res.stabilizedPressure)?('Pressure: '+pL(res.beforePressure.level)+' → '+pL(res.stabilizedPressure.level)):'';
+    notice('ram-notice','success','✅','Deep RAM clean complete','Immediate: '+fmt(immediate)+' · Stabilized (~12s): '+fmt(stabilized)+' · Quit '+quitCount+' app'+(quitCount===1?'':'s')+(pressureText?' · '+pressureText:''));
+    loadRAM();
+    loadSmartCare();
+    loadDashboard();
+  }catch(e){
+    notice('ram-notice','error','⚠️','Deep clean failed',e.message||'Operation failed');
+  }finally{
+    if(btn){btn.disabled=false;btn.innerHTML='🧹 Deep Clean RAM (Safe)';}
   }
-
-  var usedDrop=(res.before&&res.after)?Math.max(0,res.before.used-res.after.used):0;
-  var immediate=res.immediateFreeGainBytes||res.reclaimedBytes||usedDrop;
-  var stabilized=res.stabilizedFreeGainBytes!==undefined?res.stabilizedFreeGainBytes:immediate;
-  var quitCount=(res.stopped||[]).length;
-  var pressureText=(res.beforePressure&&res.stabilizedPressure)?('Pressure: '+pL(res.beforePressure.level)+' → '+pL(res.stabilizedPressure.level)):'';
-  notice('ram-notice','success','✅','Deep RAM clean complete','Immediate: '+fmt(immediate)+' · Stabilized (~12s): '+fmt(stabilized)+' · Quit '+quitCount+' app'+(quitCount===1?'':'s')+(pressureText?' · '+pressureText:''));
-  loadRAM();
-  loadSmartCare();
-  loadDashboard();
 }
 
 // ── Disk ──────────────────────────────────────────────────────────────────────
@@ -1256,7 +1143,7 @@ var diskItems=[],diskCleaned=0;
 async function loadDisk(){
   document.getElementById('disk-list').innerHTML='<div class="skel" style="height:240px;border-radius:8px"></div>';
   try{
-    diskItems=await bridge.getDiskJunk();
+    diskItems=(await bridge.getDiskJunk()).sort(function(a,b){ return (b.bytes||0)-(a.bytes||0); });
     diskCleaned=0;document.getElementById('disk-cleaned-amt').textContent='0 B';
     renderDisk();updateDiskStats();
   }catch(e){
@@ -1271,7 +1158,7 @@ function updateDiskStats(){
   document.getElementById('disk-stat-remaining').innerHTML='<div class="card-title">📊 Remaining</div><div style="font-size:26px;font-weight:800;color:var(--warn)">'+fmt(rem)+'</div>';
 }
 function renderDisk(){
-  var colors={user_cache:'#5b8af5',system_logs:'var(--warn)',trash:'var(--danger)',mail_cache:'var(--accent2)',xcode_derived:'#f97316',ios_backups:'#6366f1',app_downloads:'var(--success)',language_files:'var(--accent3)'};
+  var colors={user_cache:'var(--accent3)',system_logs:'var(--warn)',trash:'var(--danger)',mail_cache:'var(--accent2)',xcode_derived:'var(--accent)',ios_backups:'var(--accent3)',app_downloads:'var(--success)',language_files:'var(--accent3)'};
   document.getElementById('disk-list').innerHTML=diskItems.map(function(item){
     var c=item.color||colors[item.id]||'var(--accent)';
     var pct=Math.min(item.bytes/(5*1073741824)*100,100).toFixed(1);
@@ -1336,7 +1223,7 @@ var selectedAppPaths=new Set();
 var appsSearch='';
 var appsOnlyLeftovers=false;
 var appsBatchBusy=false;
-var appColors=['#5b8af5','#a855f7','#22d3b8','#f97316','#22c55e','#eab308','#ef4444','#06b6d4'];
+var appColors=['var(--accent3)','var(--accent2)','var(--accent)','var(--success)','var(--warn)','var(--danger)'];
 var appIcons={game:'🎮',music:'🎵',productivity:'💼',design:'🎨',video:'📹',browser:'🌐',developer:'⚙️',utilities:'🔧',social:'💬',education:'📚'};
 function appSafeId(app){
   var src=String((app&&app.path)||'');
@@ -1454,7 +1341,7 @@ function renderApps(){
         '<div class="app-icon" style="background:'+c+'20">'+icon+'</div>'+
         '<div class="app-info"><div class="app-name">'+app.name+'</div>'+
         '<div class="app-meta"><span>'+app.sizeStr+'</span>'+
-        (app.bundleId?'<span class="tag" style="background:rgba(91,138,245,0.12);color:var(--accent3)">'+escHtml(app.bundleId)+'</span>':'')+
+        (app.bundleId?'<span class="tag" style="background:rgba(143,119,96,0.14);color:var(--accent3)">'+escHtml(app.bundleId)+'</span>':'')+
         (app.leftover>0?'<span class="tag" style="background:rgba(239,68,68,0.1);color:var(--danger)">+'+app.leftoverStr+' · '+(app.leftoverPathCount||0)+' items</span>':'<span class="tag" style="background:rgba(34,197,94,0.12);color:var(--success)">No leftovers found</span>')+
         '</div></div>'+
         '<button class="btn btn-ghost btn-sm" onclick="window.api.openInFinder(\''+safePath+'\')" '+(appsBatchBusy?'disabled':'')+'>📂</button>'+
@@ -1737,8 +1624,8 @@ function renderProtectionFindings(){
       '<div class="app-icon" style="background:'+sevColor+'22">'+protectionIcon(f.severity)+'</div>'+
       '<div class="app-info"><div class="app-name">'+escHtml(f.title||'Unknown finding')+'</div>'+
       '<div class="app-meta">'+escHtml(f.description||'')+
-      ' <span class="tag" style="background:'+sevColor+'22;color:'+sevColor+'">'+escHtml((f.severity||'info').toUpperCase())+'</span>'+
-      (f.isNew?'<span class="tag" style="background:rgba(60,198,255,0.18);color:var(--accent3)">NEW</span>':'')+
+      ' <span class="tag" style="background:'+sevColor+'22;color:'+sevColor+'">'+escHtml(cap((f.severity||'info')))+'<\/span>'+
+      (f.isNew?'<span class="tag" style="background:rgba(143,119,96,0.16);color:var(--accent3)">New</span>':'')+
       (f.path?'<span class="monospace" style="font-size:10px">'+escHtml(f.path)+'</span>':'')+
       '</div></div>'+
       '<div style="display:flex;gap:6px;flex-wrap:wrap">'+actions.join('')+'</div>'+
@@ -1792,7 +1679,7 @@ function buildPrivacy(){
   document.getElementById('privacy-list').innerHTML=privItems.map(function(item){
     var cleared=privCleared.has(item.id);
     return '<div class="app-row">'+
-      '<div class="app-icon" style="background:rgba(91,138,245,0.1)">'+item.icon+'</div>'+
+      '<div class="app-icon" style="background:rgba(143,119,96,0.12)">'+item.icon+'</div>'+
       '<div class="app-info"><div class="app-name">'+item.name+'</div>'+
       '<div class="app-meta">'+item.desc+
       ' <span class="tag" style="background:'+riskColor(item.risk)+'18;color:'+riskColor(item.risk)+'">'+item.risk+' Risk</span></div></div>'+
@@ -1817,19 +1704,19 @@ async function clearAllPrivacy(){
 
 function safetyModuleLabel(moduleId){
   var m=String(moduleId||'').toLowerCase();
-  if(m==='storage-sweep') return 'Storage Sweep';
-  if(m==='app-manager') return 'App Manager';
-  if(m==='cloud-trim') return 'Cloud Trim';
-  if(m==='clutter-finder') return 'Clutter Finder';
-  if(m==='space-atlas') return 'Space Atlas';
-  if(m==='shield') return 'Shield';
+  if(m==='storage-sweep') return 'Storage';
+  if(m==='app-manager') return 'Applications';
+  if(m==='cloud-trim') return 'Cloud';
+  if(m==='clutter-finder') return 'Duplicates';
+  if(m==='space-atlas') return 'Space';
+  if(m==='shield') return 'Protection';
   return 'Cleanup';
 }
 function safetyModuleColor(moduleId){
   var m=String(moduleId||'').toLowerCase();
   if(m==='storage-sweep') return 'var(--warn)';
   if(m==='app-manager') return 'var(--accent3)';
-  if(m==='cloud-trim') return '#4cc9f0';
+  if(m==='cloud-trim') return 'var(--accent3)';
   if(m==='clutter-finder') return 'var(--accent2)';
   if(m==='space-atlas') return 'var(--success)';
   if(m==='shield') return 'var(--danger)';
@@ -1976,7 +1863,7 @@ function renderAutoCareState(){
       if(action.status==='done'){
         chips.push('<span class="clutter-chip">Last RAM clean: +'+fmt(action.stabilizedFreeGainBytes||action.immediateFreeGainBytes||0)+'</span>');
       }else if(action.status==='skipped'){
-        chips.push('<span class="clutter-chip">Last RAM action: skipped ('+escHtml(action.reason||'conditions')+')</span>');
+        chips.push('<span class="clutter-chip">Last RAM action: skipped ('+escHtml(autoCareReasonText(action.reason))+')</span>');
       }else if(action.status==='failed'){
         chips.push('<span class="clutter-chip" style="border-color:rgba(239,68,68,0.4);color:var(--danger)">Last RAM action failed</span>');
       }
@@ -2049,7 +1936,10 @@ async function runAutoCareNow(){
       if(action&&action.type==='ram-clean'&&action.status==='done'){
         notice('safety-notice','success','✅','Auto Care complete','RAM clean finished. Stabilized gain: '+fmt(action.stabilizedFreeGainBytes||0)+'.');
       }else if(action&&action.type==='ram-clean'&&action.status==='skipped'){
-        notice('safety-notice','info','ℹ️','Auto Care complete','RAM action skipped: '+(action.reason||'conditions not met')+'.');
+        var copy=action.reason==='requires-authorization'
+          ? ramAuthHelpText()
+          : 'RAM action skipped: '+autoCareReasonText(action.reason)+'.';
+        notice('safety-notice','info','ℹ️','Auto Care complete',copy);
       }else if(action&&action.type==='ram-clean'&&action.status==='failed'){
         notice('safety-notice','error','⚠️','Auto Care finished with warning',action.error||'RAM action failed.');
       }else{
@@ -2555,7 +2445,7 @@ async function trashSelectedDuplicates(){
     var preview=await bridge.trashPaths({
       paths: targets,
       module: 'clutter-finder',
-      action: 'Clutter Finder duplicate cleanup',
+      action: 'Duplicate cleanup',
       dryRun: true,
       recordHistory: false,
     });
@@ -2579,7 +2469,7 @@ async function trashSelectedDuplicates(){
     var res=await bridge.trashPaths({
       paths: targets,
       module: 'clutter-finder',
-      action: 'Clutter Finder duplicate cleanup',
+      action: 'Duplicate cleanup',
       dryRun: false,
       recordHistory: true,
     });
@@ -2972,7 +2862,7 @@ async function trashSelectedLensItems(){
     var preview=await bridge.trashPaths({
       paths: targets,
       module: 'space-atlas',
-      action: 'Space Atlas cleanup',
+      action: 'Space cleanup',
       dryRun: true,
       recordHistory: false,
     });
@@ -2985,7 +2875,7 @@ async function trashSelectedLensItems(){
       return;
     }
     var proceed=window.confirm(
-      'Dry run complete for selected Space Atlas items.\n\n'+
+      'Dry run complete for selected Space items.\n\n'+
       'Candidates: '+(preview.previewCount||0)+' item'+((preview.previewCount||0)===1?'':'s')+'\n'+
       'Estimated space: '+fmt(preview.previewBytes||0)+'\n\n'+
       'Move these items to Trash now?'
@@ -2994,7 +2884,7 @@ async function trashSelectedLensItems(){
     var res=await bridge.trashPaths({
       paths: targets,
       module: 'space-atlas',
-      action: 'Space Atlas cleanup',
+      action: 'Space cleanup',
       dryRun: false,
       recordHistory: true,
     });
@@ -3054,19 +2944,23 @@ function renderLensMap(){
   }
   var max=items[0].size||1;
   map.innerHTML=
-    '<div style="font-size:12px;color:var(--muted);margin-bottom:10px">Top '+items.length+' items by size (click bubble to open/reveal, use badge to select)</div>'+
-    '<div class="lens-bubble-wrap">'+items.map(function(item){
-      var ratio=Math.max(0.15,item.size/max);
-      var dia=Math.round(66+ratio*88);
+    '<div style="font-size:12px;color:var(--muted);margin-bottom:12px">Top '+items.length+' items by size. Select from here or open the item directly.</div>'+
+    '<div class="lens-map-list">'+items.map(function(item){
       var isSelected=lensState.selectedPaths.has(item.path);
+      var pct=Math.max(2,Math.round((item.size/max)*100));
       var action=item.type==='directory'
-        ? "lensOpen('"+escJs(item.path)+"')"
-        : "window.api.openInFinder('"+escJs(item.path)+"')";
-      var toggleNext=isSelected?'false':'true';
-      return '<div class="lens-bubble '+(isSelected?'selected':'')+'" style="width:'+dia+'px;height:'+dia+'px" onclick="'+action+'">'+
-        '<button class="lens-select-badge '+(isSelected?'on':'')+'" onclick="event.stopPropagation();lensToggleSelection(\''+escJs(item.path)+'\','+toggleNext+')" '+(lensState.loading||lensState.cleaning?'disabled':'')+'>'+(isSelected?'✓':'＋')+'</button>'+
-        '<div class="lens-b-name">'+escHtml(item.name)+'</div>'+
-        '<div class="lens-b-size">'+escHtml(item.sizeStr)+'</div>'+
+        ? '<button class="btn btn-ghost btn-sm" onclick="lensOpen(\''+escJs(item.path)+'\')" '+(lensState.loading||lensState.cleaning?'disabled':'')+'>Open</button>'
+        : '<button class="btn btn-ghost btn-sm" onclick="window.api.openInFinder(\''+escJs(item.path)+'\')" '+(lensState.loading||lensState.cleaning?'disabled':'')+'>Reveal</button>';
+      return '<div class="lens-bar-row">'+
+        '<div class="lens-bar-main">'+
+          '<div class="lens-bar-head"><div class="lens-bar-name">'+escHtml(item.name)+'</div><div style="font-size:12px;font-weight:700">'+escHtml(item.sizeStr)+'</div></div>'+
+          '<div class="lens-bar-track"><div class="lens-bar-fill" style="width:'+pct+'%;background:'+(isSelected?'var(--success)':'var(--accent2)')+'"></div></div>'+
+          '<div class="lens-bar-meta">'+escHtml(item.path)+' · '+item.pct+'%</div>'+
+        '</div>'+
+        '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+
+          '<label class="apps-inline-check"><input type="checkbox" '+(isSelected?'checked':'')+' onchange="lensToggleSelection(\''+escJs(item.path)+'\',this.checked)" '+(lensState.loading||lensState.cleaning?'disabled':'')+'>Select</label>'+
+          action+
+        '</div>'+
         '</div>';
     }).join('')+'</div>';
 }
@@ -3122,7 +3016,7 @@ async function loadLens(targetPath){
 console.log('LumaSweep renderer initializing...');
 buildPrivacy();
 renderProtectionSummary();
-loadSmartCare().catch(function(e){ console.error('Pulse Hub load failed:', e); });
+loadSmartCare().catch(function(e){ console.error('Overview load failed:', e); });
 warmSmartAppsCount(false);
 bridge.getAppVersion().then(function(v){
   var el=document.getElementById('app-version');

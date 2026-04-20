@@ -405,15 +405,13 @@ function getAutoCareSettings() {
 function createWindow() {
   const isDev = !app.isPackaged;
   mainWindow = new BrowserWindow({
-    width: 1100,
-    height: 720,
-    minWidth: 900,
-    minHeight: 600,
+    width: 1240,
+    height: 820,
+    minWidth: 980,
+    minHeight: 680,
     titleBarStyle: 'hiddenInset',
     trafficLightPosition: { x: 18, y: 18 },
-    backgroundColor: '#0d0d14',
-    vibrancy: 'dark',
-    visualEffectState: 'active',
+    backgroundColor: '#171513',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -1067,7 +1065,14 @@ function getStartupItemsInternal() {
     }
   } catch {}
 
-  return items;
+  const impactRank = { High: 0, Medium: 1, Low: 2 };
+  return items.sort((a, b) => {
+    if (!!a.enabled !== !!b.enabled) return a.enabled ? -1 : 1;
+    if (!!a.system !== !!b.system) return a.system ? 1 : -1;
+    const impactDiff = (impactRank[a.impact] ?? 9) - (impactRank[b.impact] ?? 9);
+    if (impactDiff !== 0) return impactDiff;
+    return String(a.name || '').localeCompare(String(b.name || ''));
+  });
 }
 
 function toggleStartupItemInternal({ filePath, enabled, loginItem, name }) {
@@ -1394,24 +1399,28 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function purgeRamSmart() {
-  // Fast path: use cached sudo credentials without prompting.
-  if (isSudoAuthorized()) {
-    const noPrompt = purgeRamWithSudoNoPrompt();
-    if (noPrompt.success) return { success: true, method: 'sudo-cached' };
+function purgeRamAuthorizedOnly() {
+  if (!isSudoAuthorized()) {
+    return {
+      success: false,
+      requiresAuthorization: true,
+      error: 'RAM cleanup needs one-time authorization first. Use Unlock RAM Cleanup, then try again.',
+    };
   }
+  const result = purgeRamWithSudoNoPrompt();
+  return result.success ? { success: true, method: 'sudo-cached' } : result;
+}
 
-  // Ask once via secure AskPass dialog, then retry non-interactive sudo.
+async function authorizeRamCleanup() {
+  if (isSudoAuthorized()) return { success: true, alreadyAuthorized: true };
   const auth = await authorizeSudoSession();
-  if (auth.success) {
-    const noPrompt = purgeRamWithSudoNoPrompt();
-    if (noPrompt.success) return { success: true, method: 'sudo-askpass' };
-  }
+  if (!auth.success) return { success: false, error: auth.error || 'Authorization failed' };
+  if (isSudoAuthorized()) return { success: true, authorized: true };
+  return { success: false, error: 'Authorization did not persist' };
+}
 
-  // Fallback to native admin prompt for compatibility.
-  const fallback = await purgeRamWithAdminPrompt();
-  if (fallback.success) return { success: true, method: 'osascript-admin' };
-  return { success: false, error: fallback.error || auth.error || 'Unable to authorize RAM cleanup' };
+async function purgeRamSmart() {
+  return purgeRamAuthorizedOnly();
 }
 
 async function buildRamCleanupMetrics(before) {
@@ -1557,20 +1566,29 @@ async function runAutoCareOnce(trigger = 'scheduled') {
         const beforePressure = getMemoryPressure();
         let purgeResult = null;
         if (trigger === 'manual') {
-          purgeResult = await purgeRamSmart();
+          purgeResult = purgeRamAuthorizedOnly();
         } else {
-          if (isSudoAuthorized()) purgeResult = purgeRamWithSudoNoPrompt();
-          else purgeResult = { success: false, error: 'Sudo not authorized for non-interactive cleanup' };
+          purgeResult = purgeRamAuthorizedOnly();
         }
 
         if (!purgeResult || !purgeResult.success) {
-          actions.push({
-            type: 'ram-clean',
-            status: 'failed',
-            error: (purgeResult && purgeResult.error) || 'RAM cleanup failed',
-            pressureLevel,
-            inactiveGb: Number(inactiveGb.toFixed(2)),
-          });
+          if (purgeResult && purgeResult.requiresAuthorization) {
+            actions.push({
+              type: 'ram-clean',
+              status: 'skipped',
+              reason: 'requires-authorization',
+              pressureLevel,
+              inactiveGb: Number(inactiveGb.toFixed(2)),
+            });
+          } else {
+            actions.push({
+              type: 'ram-clean',
+              status: 'failed',
+              error: (purgeResult && purgeResult.error) || 'RAM cleanup failed',
+              pressureLevel,
+              inactiveGb: Number(inactiveGb.toFixed(2)),
+            });
+          }
         } else {
           const metrics = await buildRamCleanupMetrics(before);
           updateTray();
@@ -1654,11 +1672,39 @@ function buildTrayMenu() {
     { label: `Pressure: ${pressureLabel}${pressure.freePct !== null ? ` (${pressure.freePct}% free)` : ''}`, enabled: false },
     { type: 'separator' },
     {
+      label: 'Unlock RAM Cleanup…',
+      click: async () => {
+        const result = await authorizeRamCleanup();
+        if (!result.success) {
+          dialog.showErrorBox('RAM Cleanup Authorization Failed', result.error || 'Unable to store administrator authorization.');
+          return;
+        }
+        dialog.showMessageBox({
+          type: 'info',
+          buttons: ['OK'],
+          title: 'RAM Cleanup Ready',
+          message: 'RAM cleanup is unlocked for this macOS session.',
+          detail: 'Free RAM actions will now run without showing a password prompt until sudo expires.',
+        });
+      },
+    },
+    {
       label: 'Free Inactive RAM Now',
       click: async () => {
-        const result = await purgeRamSmart();
+        const result = purgeRamAuthorizedOnly();
         if (!result.success) {
-          dialog.showErrorBox('RAM Cleanup Failed', result.error || 'Unable to run purge.');
+          if (result.requiresAuthorization) {
+            dialog.showMessageBox({
+              type: 'info',
+              buttons: ['OK'],
+              title: 'RAM Cleanup Locked',
+              message: 'Unlock RAM Cleanup first.',
+              detail: result.error,
+            });
+          } else {
+            dialog.showErrorBox('RAM Cleanup Failed', result.error || 'Unable to run purge.');
+          }
+          return;
         }
         updateTray();
       },
@@ -1783,6 +1829,10 @@ ipcMain.handle('set-auto-care-settings', async (event, patch = {}) => {
   return { success: true, settings: updated, status: getAutoCareState().status };
 });
 
+ipcMain.handle('authorize-ram-cleanup', async () => {
+  return authorizeRamCleanup();
+});
+
 ipcMain.handle('run-auto-care-now', async () => {
   const result = await runAutoCareOnce('manual');
   resetAutoCareScheduler(false);
@@ -1878,9 +1928,15 @@ ipcMain.handle('open-activity-monitor', async () => {
 ipcMain.handle('free-ram', async () => {
   const before = getRamSnapshot();
   const beforePressure = getMemoryPressure();
-  const result = await purgeRamSmart();
+  const result = purgeRamAuthorizedOnly();
   if (!result.success) {
-    return { success: false, error: result.error, before, beforePressure };
+    return {
+      success: false,
+      error: result.error,
+      before,
+      beforePressure,
+      requiresAuthorization: !!result.requiresAuthorization,
+    };
   }
 
   const metrics = await buildRamCleanupMetrics(before);
@@ -1911,6 +1967,18 @@ ipcMain.handle('deep-clean-ram', async (event, pids = []) => {
   const me = os.userInfo().username;
   const stopped = [];
   const skipped = [];
+  const ready = purgeRamAuthorizedOnly();
+  if (!ready.success) {
+    return {
+      success: false,
+      error: ready.error,
+      before,
+      beforePressure,
+      stopped,
+      skipped,
+      requiresAuthorization: !!ready.requiresAuthorization,
+    };
+  }
 
   const targetPids = Array.isArray(pids) ? pids.slice(0, 5) : [];
   for (const raw of targetPids) {
@@ -1942,9 +2010,17 @@ ipcMain.handle('deep-clean-ram', async (event, pids = []) => {
   }
 
   await new Promise(r => setTimeout(r, 1200));
-  const purgeResult = await purgeRamSmart();
+  const purgeResult = purgeRamAuthorizedOnly();
   if (!purgeResult.success) {
-    return { success: false, error: purgeResult.error, before, beforePressure, stopped, skipped };
+    return {
+      success: false,
+      error: purgeResult.error,
+      before,
+      beforePressure,
+      stopped,
+      skipped,
+      requiresAuthorization: !!purgeResult.requiresAuthorization,
+    };
   }
 
   const metrics = await buildRamCleanupMetrics(before);
@@ -2703,7 +2779,7 @@ ipcMain.handle('clear-privacy', async (event, itemId) => {
     },
     recent_files: () => {
       run(`defaults delete com.apple.recentitems 2>/dev/null`);
-      run(`osascript -e 'tell application "System Events" to delete every login item' 2>/dev/null`);
+      run(`killall sharedfilelistd 2>/dev/null`);
     },
     downloads_history: () => {
       run(`sqlite3 "${home}/Library/Safari/Downloads.db" "DELETE FROM downloads;" 2>/dev/null`);
@@ -2781,7 +2857,17 @@ ipcMain.handle('clear-cleanup-history', async () => {
 // ─── IPC: App Info ─────────────────────────────────────────────────────────────
 
 ipcMain.handle('open-in-finder', async (event, filePath) => {
-  shell.showItemInFinder(filePath);
+  try {
+    shell.showItemInFinder(filePath);
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: e.message || 'Could not reveal item in Finder' };
+  }
+});
+
+ipcMain.handle('quit-app', async () => {
+  setImmediate(() => app.quit());
+  return { success: true };
 });
 
 ipcMain.handle('get-app-version', () => app.getVersion());
