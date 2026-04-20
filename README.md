@@ -1,5 +1,6 @@
 # LumaSweep
-<img width="1096" height="603" alt="LumaSweep app screenshot" src="https://github.com/user-attachments/assets/69808e67-2aec-4b69-af31-7f5ad3d1d1ba" />
+<img width="232" height="234" alt="image" src="https://github.com/user-attachments/assets/2d748a5d-ffb1-4e86-ada0-1682c337bdea" />
+
 
 LumaSweep is a macOS utility app built with Electron to monitor system health and clean common junk safely from one interface.
 
