@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.4.1] - 2026-04-19
+
+- Reworked the app UI to a cleaner utility-style layout with a calmer dark palette, flatter panels, and more conventional navigation.
+- Simplified the overview, storage, protection, and space-management surfaces to reduce decorative dashboard patterns and improve scan readability.
+- Changed RAM cleanup so `Free Inactive RAM` no longer opens a password prompt directly.
+- Added explicit `Unlock RAM Cleanup` actions in the app and tray menu for one-time authorization when users want it.
+- Added a visible top-bar `Quit` action and kept tray quit controls available.
+- Fixed `Recent Files` cleanup so it no longer removes login items.
+- Sorted startup items more usefully and improved Finder reveal error handling.
+
 ## [1.3.0] - 2026-03-05
 
 - Rebranded the app to `LumaSweep` across UI, tray, prompts, and packaging metadata.
